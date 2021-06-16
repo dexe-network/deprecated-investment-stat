@@ -1,0 +1,38 @@
+version: '3.7'
+
+services:
+  postgres:
+    container_name: postgres
+    environment:
+      POSTGRES_PASSWORD: root
+      POSTGRES_USER: root
+      POSTGRES_DB: dexparser
+
+    image: "postgres:12-alpine"
+    restart: always
+    ports:
+      - "5432:5432"
+  app:
+    container_name: dex-trades-parser
+    image: dex-trades-parser
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - postgres
+    volumes:
+      - ./migrations.d:/root/migrations.d
+      - ./block_number:/root/block_number
+    restart: always
+    env_file:
+      - .env
+
+  pgadmin:
+    container_name: pgadmin4_container
+    image: dpage/pgadmin4
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: root
+    ports:
+      - "5050:80"
