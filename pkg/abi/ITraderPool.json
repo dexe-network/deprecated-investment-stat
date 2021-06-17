@@ -1,0 +1,35 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "fromAsset",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "toAsset",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "fromAmt",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "caller",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes",
+        "name": "_calldata",
+        "type": "bytes"
+      }
+    ],
+    "name": "initiateExchangeOperation",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

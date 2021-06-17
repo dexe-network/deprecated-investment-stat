@@ -1,0 +1,30 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address[9]",
+        "name": "iaddr",
+        "type": "address[9]"
+      },
+      {
+        "internalType": "uint256",
+        "name": "commissions",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "_actual",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "_investorRestricted",
+        "type": "bool"
+      }
+    ],
+    "name": "initialize",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

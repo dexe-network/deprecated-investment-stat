@@ -248,6 +248,7 @@ func (s *Subscriber) handleHeader(header types.Header) {
 	var wg sync.WaitGroup
 	for _, t :=  range block.Transactions() {
 		if t.To() != nil && t.To().Hex() == s.parser.RouterAddress() {
+			/////// On this position we can put all interesting address and make some data parse
 			wg.Add(1)
 			go func(t types.Transaction, blockNumber int64) {
 				defer wg.Done()

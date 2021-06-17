@@ -1,0 +1,26 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_addr",
+        "type": "address"
+      }
+    ],
+    "name": "probe",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "isContract",
+        "type": "bool"
+      },
+      {
+        "internalType": "address",
+        "name": "forwardedTo",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]
