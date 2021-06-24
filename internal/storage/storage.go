@@ -3,8 +3,8 @@ package storage
 import (
 	"context"
 	"dex-trades-parser/internal/models"
-	"github.com/jinzhu/gorm"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 type Storage struct {
@@ -30,14 +30,20 @@ func NewStorage(
 
 type Repo struct {
 	EthTrade EthTrade
+	Pool Pool
 }
 
 func NewRepo(st *Storage) Repo {
 	return Repo{
 		EthTrade: NewEthTradeStorage(st),
+		Pool: NewPoolStorage(st),
 	}
 }
 
 type EthTrade interface {
 	Save(ethTrade *models.EthTrade) (err error)
+}
+
+type Pool interface {
+	Save(pool *models.Pool) (err error)
 }

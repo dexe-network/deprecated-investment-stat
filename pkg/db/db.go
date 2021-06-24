@@ -6,22 +6,22 @@ import (
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/database/redshift"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"github.com/jinzhu/gorm"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 func Migrate(log *zap.Logger, db *gorm.DB, dialect, migrationsPath string) {
 	var driver database.Driver
-	err := db.DB().Ping()
+	sqlDb, err := db.DB()
 	if err != nil {
 		log.Fatal("db.Ping", zap.Error(err))
 	}
 
 	switch dialect {
 	case "postgres":
-		driver, err = postgres.WithInstance(db.DB(), &postgres.Config{})
+		driver, err = postgres.WithInstance(sqlDb, &postgres.Config{})
 	case "redshift":
-		driver, err = redshift.WithInstance(db.DB(), &redshift.Config{})
+		driver, err = redshift.WithInstance(sqlDb, &redshift.Config{})
 	default:
 		log.Fatal("unexpected dialect " + dialect)
 	}

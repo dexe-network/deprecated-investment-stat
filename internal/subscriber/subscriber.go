@@ -4,6 +4,8 @@ import (
 	"context"
 	"dex-trades-parser/internal/contracts/erc20"
 	"dex-trades-parser/internal/models"
+
+	//"dex-trades-parser/internal/models"
 	"dex-trades-parser/internal/storage"
 	"dex-trades-parser/pkg/parser"
 	"dex-trades-parser/pkg/response"
@@ -29,17 +31,16 @@ import (
 )
 
 type Subscriber struct {
-	ctx         context.Context
-	cancel      func()
-	log         *zap.Logger
-	st 			*storage.Storage
-	client		*ethclient.Client
-	newHeadSub	ethereum.Subscription
-	parser 		*parser.Parser
-	headChan	chan *types.Header
-	blockNumber int64
+	ctx           context.Context
+	cancel        func()
+	log           *zap.Logger
+	st            *storage.Storage
+	client        *ethclient.Client
+	newHeadSub    ethereum.Subscription
+	parser        *parser.Parser
+	headChan      chan *types.Header
+	blockNumber   int64
 	blockNumberMu *sync.Mutex
-
 }
 
 func NewSubscriber(
@@ -51,14 +52,14 @@ func NewSubscriber(
 	parser *parser.Parser,
 ) (s *Subscriber) {
 	subscriber := &Subscriber{
-		ctx:              ctx,
-		cancel:           cancel,
-		log:              log,
-		st: st,
-		client: client,
-		parser: parser,
-		headChan: make(chan *types.Header, 10000),
-		blockNumber: 0,
+		ctx:           ctx,
+		cancel:        cancel,
+		log:           log,
+		st:            st,
+		client:        client,
+		parser:        parser,
+		headChan:      make(chan *types.Header, 10000),
+		blockNumber:   0,
 		blockNumberMu: new(sync.Mutex),
 	}
 	subscriber.loadBlockNumberFromFile()
@@ -66,10 +67,10 @@ func NewSubscriber(
 }
 
 type SubscribeRequest struct {
-	Data	   int64  `json:"data"`
+	Data int64 `json:"data"`
 }
 
-func (s *Subscriber) CreateSomething(c *gin.Context)  {
+func (s *Subscriber) CreateSomething(c *gin.Context) {
 	sr := SubscribeRequest{}
 	if err := c.ShouldBind(&sr); err != nil {
 		response.Error(c, http.StatusBadRequest, response.E{
@@ -80,13 +81,12 @@ func (s *Subscriber) CreateSomething(c *gin.Context)  {
 	}
 
 	//Do Some thing here
-
 
 	response.Success(c, http.StatusOK, response.S{})
 
 }
 
-func (s *Subscriber) GetSomething(c *gin.Context)  {
+func (s *Subscriber) GetSomething(c *gin.Context) {
 	sr := SubscribeRequest{}
 
 	if err := c.ShouldBind(&sr); err != nil {
@@ -98,14 +98,12 @@ func (s *Subscriber) GetSomething(c *gin.Context)  {
 	}
 
 	//Do Some thing here
-
 
 	response.Success(c, http.StatusOK, response.S{Data: 34})
 
-
 }
 
-func (s *Subscriber) UpdateSomething(c *gin.Context)  {
+func (s *Subscriber) UpdateSomething(c *gin.Context) {
 	sr := SubscribeRequest{}
 	if err := c.ShouldBind(&sr); err != nil {
 		response.Error(c, http.StatusBadRequest, response.E{
@@ -117,12 +115,11 @@ func (s *Subscriber) UpdateSomething(c *gin.Context)  {
 
 	//Do Some thing here
 
-
 	response.Success(c, http.StatusOK, response.S{})
 
 }
 
-func (s *Subscriber) DeleteSomething(c *gin.Context)  {
+func (s *Subscriber) DeleteSomething(c *gin.Context) {
 	sr := SubscribeRequest{}
 	if err := c.ShouldBind(&sr); err != nil {
 		response.Error(c, http.StatusBadRequest, response.E{
@@ -134,13 +131,11 @@ func (s *Subscriber) DeleteSomething(c *gin.Context)  {
 
 	//Do Some thing here
 
-
 	response.Success(c, http.StatusOK, response.S{})
 
 }
 
-
-func (s *Subscriber) Run()  {
+func (s *Subscriber) Run() {
 
 	if s.blockNumber > 0 {
 		s.loadHistory()
@@ -149,25 +144,9 @@ func (s *Subscriber) Run()  {
 	s.subscribe()
 	go s.subscriptionHandler()
 
-	//s. TokensLiquidity.data = map[string]*big.Float{}
-	//
-	//s.initScrapers()
-	//s.init()
-	//
-	//pairsService, err := pairs.NewPairs(s.log, s.ctx, pairsCache, s.client)
-	//if err != nil {
-	//	log.Fatal(err.Error())
-	//}
-	//s.pairsService = pairsService
-	//
-	//pairsService.Init()
-	//
-	//s.Subscribe()
-	//go s.handleHeaderChan()
-
 }
 
-func (s *Subscriber) subscribe()  {
+func (s *Subscriber) subscribe() {
 
 	newHeadSub, err := s.client.SubscribeNewHead(context.Background(), s.headChan)
 	if err != nil {
@@ -176,22 +155,20 @@ func (s *Subscriber) subscribe()  {
 	s.newHeadSub = newHeadSub
 }
 
-
 func (s *Subscriber) subscriptionHandler() {
 
 	for {
 		select {
-			case err := <-s.newHeadSub.Err():
-				log.Fatal(err)
-			case header := <-s.headChan:
-				if header.Number.Int64() <= s.blockNumber {
-					break
-				}
-				go s.handleHeader(*header)
+		case err := <-s.newHeadSub.Err():
+			log.Fatal(err)
+		case header := <-s.headChan:
+			if header.Number.Int64() <= s.blockNumber {
+				break
+			}
+			go s.handleHeader(*header)
 		}
 	}
 }
-
 
 func (s *Subscriber) loadHistory() {
 
@@ -212,7 +189,7 @@ func (s *Subscriber) loadHistory() {
 			defer wg.Done()
 			headerNumber := big.NewInt(i)
 
-			Header, err := s.client.HeaderByNumber(context.Background(),headerNumber)
+			Header, err := s.client.HeaderByNumber(context.Background(), headerNumber)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -227,7 +204,6 @@ func (s *Subscriber) loadHistory() {
 		}
 	}
 }
-
 
 func (s *Subscriber) handleHeader(header types.Header) {
 
@@ -246,13 +222,19 @@ func (s *Subscriber) handleHeader(header types.Header) {
 	}
 
 	var wg sync.WaitGroup
-	for _, t :=  range block.Transactions() {
-		if t.To() != nil && t.To().Hex() == s.parser.RouterAddress() {
-			/////// On this position we can put all interesting address and make some data parse
+	for _, t := range block.Transactions() {
+		if t.To() == nil {
+			continue
+		}
+
+		switch t.To().Hex() {
+		// Catch New Traders Pool
+		case s.parser.FactoryAddress():
+			fmt.Println("handleHeader", "FactoryAddress")
 			wg.Add(1)
 			go func(t types.Transaction, blockNumber int64) {
 				defer wg.Done()
-				s.transactionProcessing(t, block.Number().Int64(), block.Time())
+				s.factoryTransactionProcessing(t, block.Number().Int64(), block.Time())
 			}(*t, block.Number().Int64())
 		}
 	}
@@ -265,7 +247,7 @@ func (s *Subscriber) handleHeader(header types.Header) {
 	if err == nil {
 		lastBlockNumber = int64(lastBlockID)
 	}
-	fmt.Println(time.Now().String() ,header.Number, "/", lastBlockNumber)
+	fmt.Println(time.Now().String(), header.Number, "/", lastBlockNumber)
 
 	return
 }
@@ -280,13 +262,11 @@ func (s *Subscriber) updateBlockNumber(bn int64) {
 
 	s.blockNumber = bn
 
-	err := ioutil.WriteFile("block_number", []byte(strconv.FormatInt(bn, 10)) , 0644)
+	err := ioutil.WriteFile("block_number", []byte(strconv.FormatInt(bn, 10)), 0644)
 	if err != nil {
 		s.log.Error("ioutil.WriteFile", zap.Error(err))
 	}
 }
-
-
 
 func (s *Subscriber) loadBlockNumberFromFile() {
 	rawBytes, err := ioutil.ReadFile("block_number")
@@ -302,45 +282,73 @@ func (s *Subscriber) loadBlockNumberFromFile() {
 	}
 }
 
+//func (s *Subscriber) transactionProcessing(tx types.Transaction, blockNumber int64, blockTime uint64) {
+//	pTx, err  := s.parser.Parse(tx)
+//	if err != nil {
+//		s.log.Debug("Cent Parse Tx: "+ tx.Hash().String(), zap.Error(err))
+//		return
+//	}
+//
+//	priceIn, priceOut, err := s.getPrices(pTx.Tx, pTx.TokenA, pTx.TokenB, pTx.AmountIn, pTx.AmountOut)
+//
+//	err = s.st.Repo.EthTrade.Save(&models.EthTrade{
+//		TokenA:      pTx.TokenA.String(),
+//		TokenB:      pTx.TokenB.String(),
+//		Date:        time.Unix(int64(blockTime), 0),
+//		BlockNumber: blockNumber,
+//		Tx:          pTx.Tx,
+//		Protocol:    pTx.Protocol,
+//		PriceIn: 	 priceIn,
+//		PriceOut: 	 priceOut,
+//		AmountIn:    pTx.AmountIn.String(),
+//		AmountOut:   pTx.AmountOut.String(),
+//		Wallet:      pTx.Wallet.String(),
+//	})
+//	if err != nil {
+//		s.log.Error("Cent save trade to DB", zap.Error(err))
+//	}
+//}
 
-func (s *Subscriber) transactionProcessing(tx types.Transaction, blockNumber int64, blockTime uint64) {
-	pTx, err  := s.parser.Parse(tx)
+func (s *Subscriber) factoryTransactionProcessing(tx types.Transaction, blockNumber int64, blockTime uint64) {
+	parsedTransaction, err := s.parser.ParseFactoryTransaction(tx)
 	if err != nil {
-		s.log.Debug("Cent Parse Tx: "+ tx.Hash().String(), zap.Error(err))
+		s.log.Debug("Cent Parse Tx: "+tx.Hash().String(), zap.Error(err))
 		return
 	}
 
-	priceIn, priceOut, err := s.getPrices(pTx.Tx, pTx.TokenA, pTx.TokenB, pTx.AmountIn, pTx.AmountOut)
-
-	err = s.st.Repo.EthTrade.Save(&models.EthTrade{
-		TokenA:      pTx.TokenA.String(),
-		TokenB:      pTx.TokenB.String(),
-		Date:        time.Unix(int64(blockTime), 0),
-		BlockNumber: blockNumber,
-		Tx:          pTx.Tx,
-		Protocol:    pTx.Protocol,
-		PriceIn: 	 priceIn,
-		PriceOut: 	 priceOut,
-		AmountIn:    pTx.AmountIn.String(),
-		AmountOut:   pTx.AmountOut.String(),
-		Wallet:      pTx.Wallet.String(),
+	err = s.st.Repo.Pool.Save(&models.Pool{
+		CreatorAdr:            parsedTransaction.CreatorAdr.String(),
+		BasicTokenAdr:         parsedTransaction.BasicTokenAdr.String(),
+		TotalSupply:           parsedTransaction.TotalSupply,
+		TraderCommissionNum:   parsedTransaction.TraderCommissionNum,
+		TraderCommissionDen:   parsedTransaction.TraderCommissionDen,
+		InvestorCommissionNum: parsedTransaction.InvestorCommissionNum,
+		InvestorCommissionDen: parsedTransaction.InvestorCommissionDen,
+		DexeCommissionNum:     parsedTransaction.DexeCommissionNum,
+		DexeCommissionDen:     parsedTransaction.DexeCommissionDen,
+		IsActualOn:            parsedTransaction.IsActualOn,
+		InvestorRestricted:    parsedTransaction.InvestorRestricted,
+		Name:                  parsedTransaction.Name,
+		Symbol:                parsedTransaction.Symbol,
+		PoolAdr:               parsedTransaction.PoolAdr,
+		BlockNumber:           parsedTransaction.BlockNumber,
+		Tx:                    parsedTransaction.Tx,
 	})
 	if err != nil {
-		s.log.Error("Cent save trade to DB", zap.Error(err))
+		s.log.Error("Can't save trade to DB", zap.Error(err))
 	}
 }
-
 
 func (s *Subscriber) getPrices(Tx string, TokenIn common.Address, TokenOut common.Address, in *big.Int, out *big.Int) (priceIn decimal.Decimal, priceOut decimal.Decimal, err error) {
 
 	inDec, err := s.getTokenDecimals(TokenIn)
 	if err != nil {
-		s.log.Error("cent create erc20 instance: "+ TokenIn.String(), zap.Error(err))
+		s.log.Error("cent create erc20 instance: "+TokenIn.String(), zap.Error(err))
 		return
 	}
 	outDec, err := s.getTokenDecimals(TokenOut)
 	if err != nil {
-		s.log.Error("cent create erc20 instance: "+ TokenOut.String(), zap.Error(err))
+		s.log.Error("cent create erc20 instance: "+TokenOut.String(), zap.Error(err))
 		return
 	}
 
@@ -349,23 +357,20 @@ func (s *Subscriber) getPrices(Tx string, TokenIn common.Address, TokenOut commo
 	DecimalInDec := decimal.New(int64(inDec), 0)
 	DecimalOutDec := decimal.New(int64(outDec), 0)
 
-
-
-	if DecimalOut.IsZero() || DecimalIn.IsZero()  {
+	if DecimalOut.IsZero() || DecimalIn.IsZero() {
 		err = errors.New("DecimalOut IsZero")
 		return
 	}
-	if DecimalIn.IsZero()  {
+	if DecimalIn.IsZero() {
 		err = errors.New("DecimalIn IsZero")
 		return
 	}
 
-	priceIn = DecimalIn.Div(DecimalOut).Mul(decimal.New(10,0).Pow(DecimalOutDec.Sub(DecimalInDec)))
-	priceOut = DecimalOut.Div(DecimalIn).Mul(decimal.New(10,0).Pow(DecimalInDec.Sub(DecimalOutDec)))
+	priceIn = DecimalIn.Div(DecimalOut).Mul(decimal.New(10, 0).Pow(DecimalOutDec.Sub(DecimalInDec)))
+	priceOut = DecimalOut.Div(DecimalIn).Mul(decimal.New(10, 0).Pow(DecimalInDec.Sub(DecimalOutDec)))
 
 	return
 }
-
 
 func (s *Subscriber) getTokenDecimals(tokenAddress common.Address) (decimals uint8, err error) {
 
