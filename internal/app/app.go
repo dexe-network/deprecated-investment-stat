@@ -3,8 +3,8 @@ package app
 import (
 	"context"
 	"dex-trades-parser/internal/router"
+	"dex-trades-parser/internal/services"
 	"dex-trades-parser/internal/storage"
-	"dex-trades-parser/internal/subscriber"
 	"dex-trades-parser/pkg"
 	"dex-trades-parser/pkg/flag"
 	"dex-trades-parser/pkg/runway"
@@ -29,9 +29,9 @@ func Run(ctx context.Context, cancel func(), fl *flag.Flag) {
 	e.Use(ginzap.Ginzap(logHook, time.RFC3339, true))
 	e.Use(ginzap.RecoveryWithZap(logHook, true))
 
-	sub := subscriber.NewSubscriber(ctx, cancel, log, st, r.ETH(), r.Parser())
+	servicesInst := services.InitServices(ctx, cancel, log, st, r)
 
-	router.InitRouter(e, ctx, log, sub)
+	router.InitRouter(e, ctx, log, servicesInst)
 	srv, errCh := r.HttpServer(runway.HttpServerConfig{
 		Router: e,
 	})
@@ -39,7 +39,9 @@ func Run(ctx context.Context, cancel func(), fl *flag.Flag) {
 	go pkg.GracefulServer(log, ctx, cancel, srv, errCh)
 
 	fmt.Println("START!!!")
-	sub.Run()
+	servicesInst.Subscriber.Run()
 
 	<-ctx.Done()
 }
+
+

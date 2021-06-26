@@ -282,33 +282,6 @@ func (s *Subscriber) loadBlockNumberFromFile() {
 	}
 }
 
-//func (s *Subscriber) transactionProcessing(tx types.Transaction, blockNumber int64, blockTime uint64) {
-//	pTx, err  := s.parser.Parse(tx)
-//	if err != nil {
-//		s.log.Debug("Cent Parse Tx: "+ tx.Hash().String(), zap.Error(err))
-//		return
-//	}
-//
-//	priceIn, priceOut, err := s.getPrices(pTx.Tx, pTx.TokenA, pTx.TokenB, pTx.AmountIn, pTx.AmountOut)
-//
-//	err = s.st.Repo.EthTrade.Save(&models.EthTrade{
-//		TokenA:      pTx.TokenA.String(),
-//		TokenB:      pTx.TokenB.String(),
-//		Date:        time.Unix(int64(blockTime), 0),
-//		BlockNumber: blockNumber,
-//		Tx:          pTx.Tx,
-//		Protocol:    pTx.Protocol,
-//		PriceIn: 	 priceIn,
-//		PriceOut: 	 priceOut,
-//		AmountIn:    pTx.AmountIn.String(),
-//		AmountOut:   pTx.AmountOut.String(),
-//		Wallet:      pTx.Wallet.String(),
-//	})
-//	if err != nil {
-//		s.log.Error("Cent save trade to DB", zap.Error(err))
-//	}
-//}
-
 func (s *Subscriber) factoryTransactionProcessing(tx types.Transaction, blockNumber int64, blockTime uint64) {
 	parsedTransaction, err := s.parser.ParseFactoryTransaction(tx)
 	if err != nil {
