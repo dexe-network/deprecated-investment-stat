@@ -150,7 +150,7 @@ func (p *Parser) ParseFactoryTransaction(t types.Transaction) (pTx ParsedFactory
 		pTx.Symbol = data["_symbol"].(string)
 		pTx.Tx = t.Hash().String()
 		pTx.BlockNumber = receipt.BlockNumber.Int64()
-		pTx.PoolAdr = receipt.Logs[len(receipt.Logs) - 1].Address.String()
+		pTx.PoolAdr = common.BytesToAddress(receipt.Logs[len(receipt.Logs) - 1].Data).String()
 
 	default:
 		fmt.Println("Unknown metod : " + method.Name)
