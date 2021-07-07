@@ -12,7 +12,10 @@ require (
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/golang-migrate/migrate/v4 v4.14.1
 	github.com/google/uuid v1.1.5
+	github.com/holiman/uint256 v1.1.1 // indirect
+	github.com/jackc/pgtype v1.4.2 // indirect
 	github.com/joho/godotenv v1.3.0
+	github.com/lib/pq v1.10.2 // indirect
 	github.com/shopspring/decimal v0.0.0-20200227202807-02e2044944cc
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.1

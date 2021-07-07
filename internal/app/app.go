@@ -43,5 +43,3 @@ func Run(ctx context.Context, cancel func(), fl *flag.Flag) {
 
 	<-ctx.Done()
 }
-
-

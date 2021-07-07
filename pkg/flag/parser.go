@@ -11,6 +11,7 @@ func (f *Flag) Parser() *Flag {
 
 	pflag.Int64("max-parallel-blocks", 200, "Max processing blocks in parallel")
 	pflag.String("dex-factory-address", "", "Dex Factory address")
+	pflag.String("dex-exchange-tool-address", "", "Dex Exchange Tool address")
 	pflag.String("network", "bsc", "Blockchain network")
 
 	return f

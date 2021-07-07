@@ -21,7 +21,7 @@ func Profile(w http.ResponseWriter, r *http.Request) {
 const (
 	// DefaultPrefix url prefix of pprof
 	DefaultPrefix = "/debug/pprof"
-	PoolsPrefix = "/pools"
+	PoolsPrefix   = "/pools"
 )
 
 func getPrefix(prefixOptions ...string) string {

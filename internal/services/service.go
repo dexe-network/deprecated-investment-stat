@@ -11,12 +11,16 @@ import (
 
 type Services struct {
 	Subscriber *subscriber.Subscriber
+	Routes     *Routes
+}
+
+type Routes struct {
 	Pool *services_routes_pools.PoolService
 }
 
-func InitServices (ctx context.Context, cancel func(), log *zap.Logger, st *storage.Storage, r *runway.Runway) *Services {
+func InitServices(ctx context.Context, cancel func(), log *zap.Logger, st *storage.Storage, r *runway.Runway) *Services {
 	return &Services{
 		Subscriber: subscriber.NewSubscriber(ctx, cancel, log, st, r.ETH(), r.Parser()),
-		Pool: services_routes_pools.NewPoolService(ctx, cancel, log, st),
+		Routes:     &Routes{Pool: services_routes_pools.NewPoolService(ctx, cancel, log, st)},
 	}
 }

@@ -11,11 +11,12 @@ func (r *Runway) Parser() (p *parser.Parser) {
 		r.log.Fatal("runway: required parser flags")
 	}
 
-	p, err := parser.NewParser(r.log, r.ETH(), viper.GetString("dex-factory-address"))
+	p, err := parser.NewParser(r.log, r.ETH(), viper.GetString("dex-factory-address"), viper.GetString("dex-exchange-tool-address"))
 	if err != nil {
 		r.log.Fatal("parser.NewParser",
 			zap.Error(err),
 			zap.String("dex-factory-address", viper.GetString("dex-factory-address")),
+			zap.String("dex-exchange-tool", viper.GetString("dex-exchange-tool-address")),
 		)
 	}
 

@@ -4,6 +4,8 @@ import (
 	"context"
 	"dex-trades-parser/internal/contracts/erc20"
 	"dex-trades-parser/internal/models"
+	"dex-trades-parser/pkg/helpers"
+	"github.com/jackc/pgtype"
 
 	//"dex-trades-parser/internal/models"
 	"dex-trades-parser/internal/storage"
@@ -226,8 +228,25 @@ func (s *Subscriber) handleHeader(header types.Header) {
 		if t.To() == nil {
 			continue
 		}
-
+		println(t.To().String(), s.isTraderPoolTx(t.To()))
 		switch t.To().Hex() {
+		// Catch Any Exchange Tool operations
+		case s.parser.ExchangeToolAddress():
+			fmt.Println("handleHeader", "ExchangeTool")
+			wg.Add(1)
+			go func(t types.Transaction, blockNumber int64) {
+				defer wg.Done()
+				s.exchangeToolTransactionProcessing(t, block.Number().Int64(), block.Time())
+			}(*t, block.Number().Int64())
+		// Catch Any trader Pool operations
+		case s.isTraderPoolTx(t.To()):
+			fmt.Println("handleHeader", "TraderPool")
+			wg.Add(1)
+			go func(t types.Transaction, blockNumber int64) {
+				defer wg.Done()
+				s.traderPoolTransactionProcessing(t, block.Number().Int64(), block.Time())
+			}(*t, block.Number().Int64())
+
 		// Catch New Traders Pool
 		case s.parser.FactoryAddress():
 			fmt.Println("handleHeader", "FactoryAddress")
@@ -249,6 +268,16 @@ func (s *Subscriber) handleHeader(header types.Header) {
 	}
 	fmt.Println(time.Now().String(), header.Number, "/", lastBlockNumber)
 
+	return
+}
+
+func (s *Subscriber) isTraderPoolTx(to *common.Address) (hexAddress string) {
+	var pool models.Pool
+	if err := s.st.DB.First(&pool, "\"poolAdr\" = ?", to.String()).Error; err != nil {
+		s.log.Debug("isTraderPoolTx Db Request Error", zap.Error(err))
+		return
+	}
+	hexAddress = pool.PoolAdr
 	return
 }
 
@@ -282,6 +311,52 @@ func (s *Subscriber) loadBlockNumberFromFile() {
 	}
 }
 
+func (s *Subscriber) traderPoolTransactionProcessing(tx types.Transaction, blockNumber int64, blockTime uint64) {
+	receipt, data, method, err := s.parser.BaseTraderPoolTransactionInfo(tx)
+
+	if err != nil {
+		s.log.Debug("Cent Parse Tx: "+tx.Hash().String(), zap.Error(err))
+		return
+	}
+
+	switch method.Name {
+
+	case "deposit":
+		println(receipt, data)
+	default:
+		fmt.Println("Unknown metod : " + method.Name)
+		err = errors.New("Unknown metod : " + method.Name)
+	}
+
+	if err != nil {
+		s.log.Debug("Cent Parse Tx: "+tx.Hash().String(), zap.Error(err))
+		return
+	}
+}
+
+func (s *Subscriber) exchangeToolTransactionProcessing(tx types.Transaction, blockNumber int64, blockTime uint64) {
+	parsedTransaction, err := s.parser.ParseExchangeToolTransaction(tx)
+	if err != nil {
+		s.log.Debug("Cent Parse Tx: "+tx.Hash().String(), zap.Error(err))
+		return
+	}
+	parsedPaths := &pgtype.TextArray{}
+	parsedPaths.Set(helpers.AddressArrToStringArr(parsedTransaction.Path))
+
+	err = s.st.Repo.Trade.Save(&models.Trade{
+		TraderPool:   parsedTransaction.TraderPool.String(),
+		AmountIn:     pgtype.Numeric{Int: parsedTransaction.AmountIn, Status: pgtype.Present},
+		AmountOutMin: pgtype.Numeric{Int: parsedTransaction.AmountOutMin, Status: pgtype.Present},
+		Path:         *parsedPaths,
+		Deadline:     pgtype.Numeric{Int: parsedTransaction.Deadline, Status: pgtype.Present},
+		BlockNumber:  parsedTransaction.BlockNumber,
+		Tx:           parsedTransaction.Tx,
+	})
+	if err != nil {
+		s.log.Error("Can't save trade to DB", zap.Error(err))
+	}
+}
+
 func (s *Subscriber) factoryTransactionProcessing(tx types.Transaction, blockNumber int64, blockTime uint64) {
 	parsedTransaction, err := s.parser.ParseFactoryTransaction(tx)
 	if err != nil {
@@ -292,7 +367,7 @@ func (s *Subscriber) factoryTransactionProcessing(tx types.Transaction, blockNum
 	err = s.st.Repo.Pool.Save(&models.Pool{
 		CreatorAdr:            parsedTransaction.CreatorAdr.String(),
 		BasicTokenAdr:         parsedTransaction.BasicTokenAdr.String(),
-		TotalSupply:           parsedTransaction.TotalSupply,
+		TotalSupply:           pgtype.Numeric{Int: parsedTransaction.TotalSupply, Status: pgtype.Present},
 		TraderCommissionNum:   parsedTransaction.TraderCommissionNum,
 		TraderCommissionDen:   parsedTransaction.TraderCommissionDen,
 		InvestorCommissionNum: parsedTransaction.InvestorCommissionNum,
@@ -308,7 +383,7 @@ func (s *Subscriber) factoryTransactionProcessing(tx types.Transaction, blockNum
 		Tx:                    parsedTransaction.Tx,
 	})
 	if err != nil {
-		s.log.Error("Can't save trade to DB", zap.Error(err))
+		s.log.Error("Can't save pool to DB", zap.Error(err))
 	}
 }
 

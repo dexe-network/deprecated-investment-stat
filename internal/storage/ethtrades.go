@@ -8,29 +8,27 @@ import (
 	"time"
 )
 
-
 type EthTradeStorage struct {
 	*Storage
 	table string
 	cache []*models.EthTrade
-	mu *sync.Mutex
+	mu    *sync.Mutex
 }
 
 func NewEthTradeStorage(st *Storage) *EthTradeStorage {
 	s := &EthTradeStorage{
 		Storage: st,
 		table:   "eth_trades",
-		mu: new(sync.Mutex),
-		cache: []*models.EthTrade{},
+		mu:      new(sync.Mutex),
+		cache:   []*models.EthTrade{},
 	}
-
 
 	go s.worker()
 
 	return s
 }
 
-func (s *EthTradeStorage) worker(){
+func (s *EthTradeStorage) worker() {
 	for {
 		if len(s.cache) > 0 {
 			s.storeToBD()
@@ -39,7 +37,7 @@ func (s *EthTradeStorage) worker(){
 	}
 }
 
-func (s *EthTradeStorage) storeToBD(){
+func (s *EthTradeStorage) storeToBD() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

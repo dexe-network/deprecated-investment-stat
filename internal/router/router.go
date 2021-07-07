@@ -23,8 +23,7 @@ func InitRouter(
 	e.DELETE("/subscription", services.Subscriber.DeleteSomething)
 
 	// Pools Routes
-	e.GET(PoolsPrefix + "/", services.Pool.GetAll)
-
+	e.GET(PoolsPrefix+"/", services.Routes.Pool.GetAll)
 
 	return
 }

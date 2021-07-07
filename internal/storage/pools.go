@@ -7,20 +7,19 @@ import (
 	"time"
 )
 
-
 type PoolStorage struct {
 	*Storage
 	table string
 	cache []*models.Pool
-	mu *sync.Mutex
+	mu    *sync.Mutex
 }
 
 func NewPoolStorage(st *Storage) *PoolStorage {
 	s := &PoolStorage{
 		Storage: st,
 		table:   "pools",
-		mu: new(sync.Mutex),
-		cache: []*models.Pool{},
+		mu:      new(sync.Mutex),
+		cache:   []*models.Pool{},
 	}
 
 	go s.poolWorker()
@@ -28,7 +27,7 @@ func NewPoolStorage(st *Storage) *PoolStorage {
 	return s
 }
 
-func (s *PoolStorage) poolWorker(){
+func (s *PoolStorage) poolWorker() {
 	for {
 		if len(s.cache) > 0 {
 			s.storePoolToBD()
@@ -37,14 +36,13 @@ func (s *PoolStorage) poolWorker(){
 	}
 }
 
-
-func (s *PoolStorage) storePoolToBD(){
+func (s *PoolStorage) storePoolToBD() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	result := s.DB.Create(&s.cache)
-	s.cache = nil;
+	s.cache = nil
 	if result.Error != nil {
-		s.Log.Error("Can't save trade to DB", zap.Error(result.Error))
+		s.Log.Error("Can't save pool to DB", zap.Error(result.Error))
 	}
 }
 

@@ -12,7 +12,6 @@ func (r *Runway) ETH() (client *ethclient.Client) {
 		r.log.Fatal("runway: required eth flags")
 	}
 
-
 	client, err := ethclient.Dial(viper.GetString("eth-node"))
 	if err != nil {
 		r.log.Fatal("ethclient.Dial",

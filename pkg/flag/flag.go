@@ -10,13 +10,13 @@ import (
 )
 
 type Flag struct {
-	app        bool
-	db         bool
-	jwt        bool
-	eth        bool
-	debug      bool
-	parser	   bool
-	cors       bool
+	app    bool
+	db     bool
+	jwt    bool
+	eth    bool
+	debug  bool
+	parser bool
+	cors   bool
 }
 
 func New() *Flag {
