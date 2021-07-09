@@ -4,9 +4,6 @@ import (
 	"context"
 	"dex-trades-parser/internal/contracts/erc20"
 	"dex-trades-parser/internal/models"
-	"dex-trades-parser/pkg/helpers"
-	"github.com/jackc/pgtype"
-
 	//"dex-trades-parser/internal/models"
 	"dex-trades-parser/internal/storage"
 	"dex-trades-parser/pkg/parser"
@@ -228,8 +225,16 @@ func (s *Subscriber) handleHeader(header types.Header) {
 		if t.To() == nil {
 			continue
 		}
-		println(t.To().String(), s.isTraderPoolTx(t.To()))
+
 		switch t.To().Hex() {
+		// Catch Any ParamKeeper operations
+		case s.parser.ParamKeeperAddress():
+			fmt.Println("handleHeader", "ParamKeeper")
+			wg.Add(1)
+			go func(t types.Transaction, blockNumber int64) {
+				defer wg.Done()
+				s.paramKeeperTransactionProcessing(t, block.Number().Int64(), block.Time())
+			}(*t, block.Number().Int64())
 		// Catch Any Exchange Tool operations
 		case s.parser.ExchangeToolAddress():
 			fmt.Println("handleHeader", "ExchangeTool")
@@ -308,126 +313,6 @@ func (s *Subscriber) loadBlockNumberFromFile() {
 	if err != nil {
 		s.log.Error("strconv.ParseInt", zap.Error(err))
 		return
-	}
-}
-
-func (s *Subscriber) traderPoolTransactionProcessing(tx types.Transaction, blockNumber int64, blockTime uint64) {
-	_, data, method, err := s.parser.BaseTraderPoolTransactionInfo(tx)
-
-	if err != nil {
-		s.log.Debug("Cent Parse Tx: "+tx.Hash().String(), zap.Error(err))
-		return
-	}
-
-	msg, err := tx.AsMessage(types.NewEIP155Signer(tx.ChainId()))
-	if err != nil {
-		s.log.Debug("Cent Parse AsMessage: "+tx.Hash().String(), zap.Error(err))
-		return
-	}
-
-	pgEnumType := pgtype.NewEnumType("pooltransfertype", []string{"deposit", "withdraw"})
-
-	switch method.Name {
-
-	case "deposit":
-		if err = pgEnumType.Set("deposit"); err != nil {
-			s.log.Error("Can't Set Enum", zap.Error(err))
-		}
-
-		err = s.st.Repo.PoolTransfer.Save(&models.PoolTransfer{
-			Wallet:      msg.From().String(),
-			PoolAdr:     tx.To().String(),
-			Amount:      pgtype.Numeric{Int: data["amount"].(*big.Int), Status: pgtype.Present},
-			Type:        *pgEnumType,
-			Date:        time.Unix(int64(blockTime), 0),
-			BlockNumber: blockNumber,
-			Tx:          tx.Hash().String(),
-		})
-		if err != nil {
-			s.log.Error("Can't save trade to DB", zap.Error(err))
-		}
-	case "withdraw":
-
-		if err = pgEnumType.Set("withdraw"); err != nil {
-			s.log.Error("Can't Set Enum", zap.Error(err))
-		}
-
-		err = s.st.Repo.PoolTransfer.Save(&models.PoolTransfer{
-			Wallet:      msg.From().String(),
-			PoolAdr:     tx.To().String(),
-			Amount:      pgtype.Numeric{Int: data["amount"].(*big.Int), Status: pgtype.Present},
-			Type:        *pgEnumType,
-			Date:        time.Unix(int64(blockTime), 0),
-			BlockNumber: blockNumber,
-			Tx:          tx.Hash().String(),
-		})
-		if err != nil {
-			s.log.Error("Can't save trade to DB", zap.Error(err))
-		}
-
-	default:
-		fmt.Println("Unknown metod : " + method.Name)
-		err = errors.New("Unknown metod : " + method.Name)
-	}
-
-	if err != nil {
-		s.log.Debug("Cent Parse Tx: "+tx.Hash().String(), zap.Error(err))
-		return
-	}
-}
-
-func (s *Subscriber) exchangeToolTransactionProcessing(tx types.Transaction, blockNumber int64, blockTime uint64) {
-	parsedTransaction, err := s.parser.ParseExchangeToolTransaction(tx)
-	if err != nil {
-		s.log.Debug("Cent Parse Tx: "+tx.Hash().String(), zap.Error(err))
-		return
-	}
-	parsedPaths := &pgtype.TextArray{}
-	parsedPaths.Set(helpers.AddressArrToStringArr(parsedTransaction.Path))
-
-	err = s.st.Repo.Trade.Save(&models.Trade{
-		TraderPool:   parsedTransaction.TraderPool.String(),
-		AmountIn:     pgtype.Numeric{Int: parsedTransaction.AmountIn, Status: pgtype.Present},
-		AmountOutMin: pgtype.Numeric{Int: parsedTransaction.AmountOutMin, Status: pgtype.Present},
-		Path:         *parsedPaths,
-		Deadline:     pgtype.Numeric{Int: parsedTransaction.Deadline, Status: pgtype.Present},
-		Date:         time.Unix(int64(blockTime), 0),
-		BlockNumber:  parsedTransaction.BlockNumber,
-		Tx:           parsedTransaction.Tx,
-	})
-	if err != nil {
-		s.log.Error("Can't save trade to DB", zap.Error(err))
-	}
-}
-
-func (s *Subscriber) factoryTransactionProcessing(tx types.Transaction, blockNumber int64, blockTime uint64) {
-	parsedTransaction, err := s.parser.ParseFactoryTransaction(tx)
-	if err != nil {
-		s.log.Debug("Cent Parse Tx: "+tx.Hash().String(), zap.Error(err))
-		return
-	}
-
-	err = s.st.Repo.Pool.Save(&models.Pool{
-		CreatorAdr:            parsedTransaction.CreatorAdr.String(),
-		BasicTokenAdr:         parsedTransaction.BasicTokenAdr.String(),
-		TotalSupply:           pgtype.Numeric{Int: parsedTransaction.TotalSupply, Status: pgtype.Present},
-		TraderCommissionNum:   parsedTransaction.TraderCommissionNum,
-		TraderCommissionDen:   parsedTransaction.TraderCommissionDen,
-		InvestorCommissionNum: parsedTransaction.InvestorCommissionNum,
-		InvestorCommissionDen: parsedTransaction.InvestorCommissionDen,
-		DexeCommissionNum:     parsedTransaction.DexeCommissionNum,
-		DexeCommissionDen:     parsedTransaction.DexeCommissionDen,
-		IsActualOn:            parsedTransaction.IsActualOn,
-		InvestorRestricted:    parsedTransaction.InvestorRestricted,
-		Name:                  parsedTransaction.Name,
-		Symbol:                parsedTransaction.Symbol,
-		PoolAdr:               parsedTransaction.PoolAdr,
-		Date:                  time.Unix(int64(blockTime), 0),
-		BlockNumber:           parsedTransaction.BlockNumber,
-		Tx:                    parsedTransaction.Tx,
-	})
-	if err != nil {
-		s.log.Error("Can't save pool to DB", zap.Error(err))
 	}
 }
 

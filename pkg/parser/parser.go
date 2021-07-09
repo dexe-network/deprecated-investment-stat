@@ -1,12 +1,8 @@
 package parser
 
 import (
-	"context"
-	"errors"
-	"fmt"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"go.uber.org/zap"
 	"io/ioutil"
@@ -26,6 +22,7 @@ type Parser struct {
 type BasicAddresses struct {
 	traderPoolFactoryUpgradeable common.Address
 	exchangeTool                 common.Address
+	paramKeeper                  common.Address
 }
 
 type Abis struct {
@@ -33,24 +30,29 @@ type Abis struct {
 	TraderPoolFactory abi.ABI
 	TraderPool        abi.ABI
 	ExchangeTool      abi.ABI
+	ParamKeeper       abi.ABI
 }
 
-func NewParser(log *zap.Logger, client *ethclient.Client, factoryAddress string, exchangeToolAddress string) (p *Parser, err error) {
+func NewParser(log *zap.Logger, client *ethclient.Client, factoryAddress string, exchangeToolAddress string, paramKeeperAddress string) (p *Parser, err error) {
 	erc20, err := loadAbiByName("ERC20", log)
 	traderPoolFactory, err := loadAbiByName("TraderPoolFactoryUpgradeable", log)
 	traderPool, err := loadAbiByName("TraderPoolUpgradeable", log)
 	exchangeTool, err := loadAbiByName("UniswapExchangeTool", log)
+	paramKeeper, err := loadAbiByName("ParamKeeper", log)
 
 	p = &Parser{
 		log: log,
 		basicAddresses: BasicAddresses{
 			traderPoolFactoryUpgradeable: common.HexToAddress(factoryAddress),
-			exchangeTool:                 common.HexToAddress(exchangeToolAddress)},
+			exchangeTool:                 common.HexToAddress(exchangeToolAddress),
+			paramKeeper:                  common.HexToAddress(paramKeeperAddress),
+		},
 		Abis: Abis{
 			erc20,
 			traderPoolFactory,
 			traderPool,
 			exchangeTool,
+			paramKeeper,
 		},
 		client: client,
 	}
@@ -82,6 +84,10 @@ func (p *Parser) ExchangeToolAddress() string {
 	return p.basicAddresses.exchangeTool.Hex()
 }
 
+func (p *Parser) ParamKeeperAddress() string {
+	return p.basicAddresses.paramKeeper.Hex()
+}
+
 type ParsedTx struct {
 	TokenA    common.Address
 	TokenB    common.Address
@@ -90,225 +96,6 @@ type ParsedTx struct {
 	AmountIn  *big.Int
 	AmountOut *big.Int
 	Wallet    common.Address
-}
-
-type ParsedExchangeToolTx struct {
-	TraderPool   common.Address
-	AmountIn     *big.Int
-	AmountOutMin *big.Int
-	Path         []common.Address
-	Deadline     *big.Int
-	BlockNumber  int64
-	Tx           string
-}
-
-type ParsedFactoryTx struct {
-	CreatorAdr            common.Address
-	BasicTokenAdr         common.Address
-	TotalSupply           *big.Int
-	TraderCommissionNum   uint16
-	TraderCommissionDen   uint16
-	InvestorCommissionNum uint16
-	InvestorCommissionDen uint16
-	DexeCommissionNum     uint16
-	DexeCommissionDen     uint16
-	IsActualOn            bool
-	InvestorRestricted    bool
-	Name                  string
-	Symbol                string
-	PoolAdr               string
-	BlockNumber           int64
-	Tx                    string
-}
-
-func (p *Parser) BaseTraderPoolTransactionInfo(t types.Transaction) (receipt *types.Receipt, data map[string]interface{}, method *abi.Method, err error) {
-
-	receipt, err = p.client.TransactionReceipt(context.Background(), t.Hash())
-	if err != nil {
-		return
-	} else {
-		if receipt.Status != 1 {
-			err = errors.New("transaction status fail : " + t.Hash().String())
-			return
-		}
-	}
-
-	if len(t.Data()) < 5 {
-		err = errors.New("transaction data to small")
-		p.log.Debug("Tx Data len < 5", zap.Error(err), zap.String("Tx", t.Hash().String()))
-		return
-	}
-
-	data = make(map[string]interface{})
-	method, err = p.Abis.TraderPool.MethodById(t.Data()[:4])
-	if err != nil {
-		p.log.Debug("Tx Data len < 5", zap.Error(err), zap.String("Tx", t.Hash().String()))
-		return
-	}
-	err = method.Inputs.UnpackIntoMap(data, t.Data()[4:])
-	if err != nil {
-		p.log.Debug("UnpackIntoMap", zap.Error(err), zap.String("Tx", t.Hash().String()))
-		return
-	}
-
-	return
-}
-
-func (p *Parser) ParseTraderPoolTransaction(t types.Transaction) (pTx ParsedExchangeToolTx, err error) {
-
-	receipt, err := p.client.TransactionReceipt(context.Background(), t.Hash())
-	if err != nil {
-		return
-	} else {
-		if receipt.Status != 1 {
-			err = errors.New("transaction status fail : " + t.Hash().String())
-			return
-		}
-	}
-
-	if len(t.Data()) < 5 {
-		err = errors.New("transaction data to small")
-		p.log.Debug("Tx Data len < 5", zap.Error(err), zap.String("Tx", t.Hash().String()))
-		return
-	}
-
-	data := make(map[string]interface{})
-	method, err := p.Abis.ExchangeTool.MethodById(t.Data()[:4])
-	if err != nil {
-		p.log.Debug("Tx Data len < 5", zap.Error(err), zap.String("Tx", t.Hash().String()))
-		return
-	}
-	err = method.Inputs.UnpackIntoMap(data, t.Data()[4:])
-	if err != nil {
-		p.log.Debug("UnpackIntoMap", zap.Error(err), zap.String("Tx", t.Hash().String()))
-		return
-	}
-
-	switch method.Name {
-
-	case "swapExactTokensForTokens":
-		pTx.TraderPool = data["traderPool"].(common.Address)
-		pTx.AmountIn, _ = data["amountIn"].(*big.Int)
-		pTx.AmountOutMin, _ = data["amountOutMin"].(*big.Int)
-		pTx.Path = data["path"].([]common.Address)
-		pTx.Deadline, _ = data["deadline"].(*big.Int)
-		pTx.Tx = t.Hash().String()
-		pTx.BlockNumber = receipt.BlockNumber.Int64()
-
-	default:
-		fmt.Println("Unknown metod : " + method.Name)
-		err = errors.New("Unknown metod : " + method.Name)
-	}
-
-	return
-}
-
-func (p *Parser) ParseExchangeToolTransaction(t types.Transaction) (pTx ParsedExchangeToolTx, err error) {
-
-	receipt, err := p.client.TransactionReceipt(context.Background(), t.Hash())
-	if err != nil {
-		return
-	} else {
-		if receipt.Status != 1 {
-			err = errors.New("transaction status fail : " + t.Hash().String())
-			return
-		}
-	}
-
-	if len(t.Data()) < 5 {
-		err = errors.New("transaction data to small")
-		p.log.Debug("Tx Data len < 5", zap.Error(err), zap.String("Tx", t.Hash().String()))
-		return
-	}
-
-	data := make(map[string]interface{})
-	method, err := p.Abis.ExchangeTool.MethodById(t.Data()[:4])
-	if err != nil {
-		p.log.Debug("Tx Data len < 5", zap.Error(err), zap.String("Tx", t.Hash().String()))
-		return
-	}
-	err = method.Inputs.UnpackIntoMap(data, t.Data()[4:])
-	if err != nil {
-		p.log.Debug("UnpackIntoMap", zap.Error(err), zap.String("Tx", t.Hash().String()))
-		return
-	}
-
-	switch method.Name {
-
-	case "swapExactTokensForTokens":
-		pTx.TraderPool = data["traderPool"].(common.Address)
-		pTx.AmountIn, _ = data["amountIn"].(*big.Int)
-		pTx.AmountOutMin, _ = data["amountOutMin"].(*big.Int)
-		pTx.Path = data["path"].([]common.Address)
-		pTx.Deadline, _ = data["deadline"].(*big.Int)
-		pTx.Tx = t.Hash().String()
-		pTx.BlockNumber = receipt.BlockNumber.Int64()
-
-	default:
-		fmt.Println("Unknown metod : " + method.Name)
-		err = errors.New("Unknown metod : " + method.Name)
-	}
-
-	return
-}
-
-func (p *Parser) ParseFactoryTransaction(t types.Transaction) (pTx ParsedFactoryTx, err error) {
-
-	receipt, err := p.client.TransactionReceipt(context.Background(), t.Hash())
-	if err != nil {
-		return
-	} else {
-		if receipt.Status != 1 {
-			err = errors.New("transaction status fail : " + t.Hash().String())
-			return
-		}
-	}
-
-	if len(t.Data()) < 5 {
-		err = errors.New("transaction data to small")
-		p.log.Debug("Tx Data len < 5", zap.Error(err), zap.String("Tx", t.Hash().String()))
-		return
-	}
-
-	data := make(map[string]interface{})
-	method, err := p.Abis.TraderPoolFactory.MethodById(t.Data()[:4])
-	if err != nil {
-		p.log.Debug("Tx Data len < 5", zap.Error(err), zap.String("Tx", t.Hash().String()))
-		return
-	}
-	err = method.Inputs.UnpackIntoMap(data, t.Data()[4:])
-	if err != nil {
-		p.log.Debug("UnpackIntoMap", zap.Error(err), zap.String("Tx", t.Hash().String()))
-		return
-	}
-
-	switch method.Name {
-
-	case "createTraderContract":
-		commisons := data["_comm"].([6]uint16)
-		pTx.CreatorAdr = data["_traderWallet"].(common.Address)
-		pTx.BasicTokenAdr = data["_basicToken"].(common.Address)
-		pTx.TotalSupply = data["_totalSupply"].(*big.Int)
-		pTx.TraderCommissionNum = commisons[0]
-		pTx.TraderCommissionDen = commisons[1]
-		pTx.InvestorCommissionNum = commisons[2]
-		pTx.InvestorCommissionDen = commisons[3]
-		pTx.DexeCommissionNum = commisons[4]
-		pTx.DexeCommissionDen = commisons[5]
-		pTx.IsActualOn = data["_actual"].(bool)
-		pTx.InvestorRestricted = data["_investorRestricted"].(bool)
-		pTx.Name = data["_name"].(string)
-		pTx.Symbol = data["_symbol"].(string)
-		pTx.Tx = t.Hash().String()
-		pTx.BlockNumber = receipt.BlockNumber.Int64()
-		pTx.PoolAdr = common.BytesToAddress(receipt.Logs[len(receipt.Logs)-1].Data).String()
-
-	default:
-		fmt.Println("Unknown metod : " + method.Name)
-		err = errors.New("Unknown metod : " + method.Name)
-	}
-
-	return
 }
 
 //func (p *Parser) Parse(t types.Transaction) (pTx ParsedTx, err error) {

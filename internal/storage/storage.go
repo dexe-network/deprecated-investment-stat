@@ -29,18 +29,20 @@ func NewStorage(
 }
 
 type Repo struct {
-	EthTrade     EthTrade
-	Pool         Pool
-	Trade        Trade
-	PoolTransfer PoolTransfer
+	EthTrade             EthTrade
+	Pool                 Pool
+	Trade                Trade
+	PoolTransfer         PoolTransfer
+	GlobalTokenWhitelist GlobalTokenWhitelist
 }
 
 func NewRepo(st *Storage) Repo {
 	return Repo{
-		EthTrade:     NewEthTradeStorage(st),
-		Pool:         NewPoolStorage(st),
-		Trade:        NewTradeStorage(st),
-		PoolTransfer: NewPoolTransfersStorage(st),
+		EthTrade:             NewEthTradeStorage(st),
+		Pool:                 NewPoolStorage(st),
+		Trade:                NewTradeStorage(st),
+		PoolTransfer:         NewPoolTransfersStorage(st),
+		GlobalTokenWhitelist: NewGlobalTokenWhitelistStorage(st),
 	}
 }
 
@@ -58,4 +60,9 @@ type Trade interface {
 
 type PoolTransfer interface {
 	Save(pool *models.PoolTransfer) (err error)
+}
+
+type GlobalTokenWhitelist interface {
+	Save(pool *models.GlobalTokenWhitelist) (err error)
+	Delete(address string) (err error)
 }
