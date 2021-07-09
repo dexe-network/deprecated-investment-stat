@@ -29,16 +29,18 @@ func NewStorage(
 }
 
 type Repo struct {
-	EthTrade EthTrade
-	Pool     Pool
-	Trade    Trade
+	EthTrade     EthTrade
+	Pool         Pool
+	Trade        Trade
+	PoolTransfer PoolTransfer
 }
 
 func NewRepo(st *Storage) Repo {
 	return Repo{
-		EthTrade: NewEthTradeStorage(st),
-		Pool:     NewPoolStorage(st),
-		Trade:    NewTradeStorage(st),
+		EthTrade:     NewEthTradeStorage(st),
+		Pool:         NewPoolStorage(st),
+		Trade:        NewTradeStorage(st),
+		PoolTransfer: NewPoolTransfersStorage(st),
 	}
 }
 
@@ -52,4 +54,8 @@ type Pool interface {
 
 type Trade interface {
 	Save(pool *models.Trade) (err error)
+}
+
+type PoolTransfer interface {
+	Save(pool *models.PoolTransfer) (err error)
 }

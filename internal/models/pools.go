@@ -2,10 +2,11 @@ package models
 
 import (
 	"github.com/jackc/pgtype"
-	"gorm.io/gorm"
+	"time"
 )
 
 type Pool struct {
+	ID                    uint           `gorm:"primaryKey"`
 	CreatorAdr            string         `json:"creatorAdr"      gorm:"type:character varying(255);column:creatorAdr;not null"`
 	BasicTokenAdr         string         `json:"basicTokenAdr"   gorm:"type:character varying(255);column:basicTokenAdr;not null"`
 	TotalSupply           pgtype.Numeric `json:"totalSupply"  gorm:"type:numeric;column:totalSupply;not null"`
@@ -20,7 +21,9 @@ type Pool struct {
 	Name                  string         `json:"name"      gorm:"type:character varying(255);column:name;not null"`
 	Symbol                string         `json:"symbol"      gorm:"type:character varying(255);column:symbol;not null"`
 	PoolAdr               string         `json:"poolAdr"   gorm:"type:character varying(255);column:poolAdr;not null"`
+	Date                  time.Time      `json:"date"         gorm:"type:timestamp with time zone;column:date;not null"`
 	BlockNumber           int64          `json:"blockNumber"  gorm:"type:bigint;column:blockNumber;not null"`        //blockNumber bigint,
 	Tx                    string         `json:"tx"           gorm:"type:character varying(255);column:tx;not null"` //tx character varying(255),
-	gorm.Model
+	CreatedAt             time.Time
+	UpdatedAt             time.Time
 }
