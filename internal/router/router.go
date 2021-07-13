@@ -10,6 +10,12 @@ import (
 	_ "net/http/pprof"
 )
 
+const (
+	PoolsPrefix = "/pools"
+	PoolTransfersPrefix = "/pool-transfers"
+	InfoPrefix  = "/info"
+)
+
 func InitRouter(
 	e *gin.Engine,
 	ctx context.Context,
@@ -17,13 +23,16 @@ func InitRouter(
 	services *services.Services,
 ) {
 	Register(e)
-	e.POST("/subscription", services.Subscriber.CreateSomething)
-	e.GET("/subscription", services.Subscriber.GetSomething)
-	e.PATCH("/subscription", services.Subscriber.UpdateSomething)
-	e.DELETE("/subscription", services.Subscriber.DeleteSomething)
 
 	// Pools Routes
-	e.GET(PoolsPrefix+"/", services.Routes.Pool.GetAll)
+	e.GET(PoolsPrefix+"/", services.Routes.Pools.GetAll)
+
+	// Info Route
+	e.GET(InfoPrefix+"/global-token-whitelist", services.Routes.Info.GetGlobalTokenWhitelist)
+
+	// Pool Transfers Route
+	e.GET(PoolTransfersPrefix+"/withdrawals/:wallet", services.Routes.PoolTransfers.GetWithdrawalsByWallet)
+	e.GET(PoolTransfersPrefix+"/deposits/:wallet", services.Routes.PoolTransfers.GetDepositsByWallet)
 
 	return
 }

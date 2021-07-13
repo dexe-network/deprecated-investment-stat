@@ -20,10 +20,10 @@ func (s *Subscriber) exchangeToolTransactionProcessing(tx types.Transaction, blo
 
 	err = s.st.Repo.Trade.Save(&models.Trade{
 		TraderPool:   parsedTransaction.TraderPool.String(),
-		AmountIn:     pgtype.Numeric{Int: parsedTransaction.AmountIn, Status: pgtype.Present},
-		AmountOutMin: pgtype.Numeric{Int: parsedTransaction.AmountOutMin, Status: pgtype.Present},
+		AmountIn:     parsedTransaction.AmountIn.String(),
+		AmountOutMin: parsedTransaction.AmountOutMin.String(),
 		Path:         *parsedPaths,
-		Deadline:     pgtype.Numeric{Int: parsedTransaction.Deadline, Status: pgtype.Present},
+		Deadline:     parsedTransaction.Deadline.String(),
 		Date:         time.Unix(int64(blockTime), 0),
 		BlockNumber:  parsedTransaction.BlockNumber,
 		Tx:           parsedTransaction.Tx,

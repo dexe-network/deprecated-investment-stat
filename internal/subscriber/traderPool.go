@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/jackc/pgtype"
 	"go.uber.org/zap"
 	"math/big"
 	"time"
@@ -25,20 +24,14 @@ func (s *Subscriber) traderPoolTransactionProcessing(tx types.Transaction, block
 		return
 	}
 
-	pgEnumType := pgtype.NewEnumType("pooltransfertype", []string{"deposit", "withdraw"})
-
 	switch method.Name {
 
 	case "deposit":
-		if err = pgEnumType.Set("deposit"); err != nil {
-			s.log.Error("Can't Set Enum", zap.Error(err))
-		}
-
 		err = s.st.Repo.PoolTransfer.Save(&models.PoolTransfer{
 			Wallet:      msg.From().String(),
 			PoolAdr:     tx.To().String(),
-			Amount:      pgtype.Numeric{Int: data["amount"].(*big.Int), Status: pgtype.Present},
-			Type:        *pgEnumType,
+			Amount:      data["amount"].(*big.Int).String(),
+			Type:        "deposit",
 			Date:        time.Unix(int64(blockTime), 0),
 			BlockNumber: blockNumber,
 			Tx:          tx.Hash().String(),
@@ -48,15 +41,11 @@ func (s *Subscriber) traderPoolTransactionProcessing(tx types.Transaction, block
 		}
 	case "withdraw":
 
-		if err = pgEnumType.Set("withdraw"); err != nil {
-			s.log.Error("Can't Set Enum", zap.Error(err))
-		}
-
 		err = s.st.Repo.PoolTransfer.Save(&models.PoolTransfer{
 			Wallet:      msg.From().String(),
 			PoolAdr:     tx.To().String(),
-			Amount:      pgtype.Numeric{Int: data["amount"].(*big.Int), Status: pgtype.Present},
-			Type:        *pgEnumType,
+			Amount:      data["amount"].(*big.Int).String(),
+			Type:        "withdraw",
 			Date:        time.Unix(int64(blockTime), 0),
 			BlockNumber: blockNumber,
 			Tx:          tx.Hash().String(),

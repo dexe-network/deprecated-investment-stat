@@ -35,7 +35,7 @@ func (s *Subscriber) paramKeeperTransactionProcessing(tx types.Transaction, bloc
 
 		err = s.st.Repo.GlobalTokenWhitelist.Delete(data["_token"].(common.Address).String())
 		if err != nil {
-			s.log.Error("Can't save delistToken in DB", zap.Error(err))
+			s.log.Error("Can't Delete delistToken from DB", zap.Error(err))
 		}
 
 	default:

@@ -3,7 +3,6 @@ package subscriber
 import (
 	"dex-trades-parser/internal/models"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/jackc/pgtype"
 	"go.uber.org/zap"
 	"time"
 )
@@ -18,7 +17,7 @@ func (s *Subscriber) factoryTransactionProcessing(tx types.Transaction, blockNum
 	err = s.st.Repo.Pool.Save(&models.Pool{
 		CreatorAdr:            parsedTransaction.CreatorAdr.String(),
 		BasicTokenAdr:         parsedTransaction.BasicTokenAdr.String(),
-		TotalSupply:           pgtype.Numeric{Int: parsedTransaction.TotalSupply, Status: pgtype.Present},
+		TotalSupply:           parsedTransaction.TotalSupply.String(),
 		TraderCommissionNum:   parsedTransaction.TraderCommissionNum,
 		TraderCommissionDen:   parsedTransaction.TraderCommissionDen,
 		InvestorCommissionNum: parsedTransaction.InvestorCommissionNum,

@@ -7,13 +7,13 @@ import (
 	"net/http"
 )
 
-type PoolsRoutes struct {
+type InfoRoutes struct {
 	Context *RoutesContext
 }
 
-func (p *PoolsRoutes) GetAll(c *gin.Context) {
-	var pools []models.Pool
-	if err := p.Context.st.DB.Find(&pools).Error; err != nil {
+func (p *InfoRoutes) GetGlobalTokenWhitelist(c *gin.Context) {
+	var tokens []models.GlobalTokenWhitelist
+	if err := p.Context.st.DB.Find(&tokens).Error; err != nil {
 		response.Error(c, http.StatusBadRequest, response.E{
 			Code:    response.InvalidJSONBody,
 			Message: "invalid request",
@@ -21,6 +21,6 @@ func (p *PoolsRoutes) GetAll(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, response.S{Data: pools})
+	response.Success(c, http.StatusOK, response.S{Data: tokens})
 
 }

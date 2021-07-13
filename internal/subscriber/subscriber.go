@@ -7,7 +7,6 @@ import (
 	//"dex-trades-parser/internal/models"
 	"dex-trades-parser/internal/storage"
 	"dex-trades-parser/pkg/parser"
-	"dex-trades-parser/pkg/response"
 	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum"
@@ -15,14 +14,12 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/gin-gonic/gin"
 	"github.com/shopspring/decimal"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"io/ioutil"
 	"log"
 	"math/big"
-	"net/http"
 	"strconv"
 	"strings"
 	"sync"
@@ -67,71 +64,6 @@ func NewSubscriber(
 
 type SubscribeRequest struct {
 	Data int64 `json:"data"`
-}
-
-func (s *Subscriber) CreateSomething(c *gin.Context) {
-	sr := SubscribeRequest{}
-	if err := c.ShouldBind(&sr); err != nil {
-		response.Error(c, http.StatusBadRequest, response.E{
-			Code:    response.InvalidJSONBody,
-			Message: "invalid request",
-		})
-		return
-	}
-
-	//Do Some thing here
-
-	response.Success(c, http.StatusOK, response.S{})
-
-}
-
-func (s *Subscriber) GetSomething(c *gin.Context) {
-	sr := SubscribeRequest{}
-
-	if err := c.ShouldBind(&sr); err != nil {
-		response.Error(c, http.StatusBadRequest, response.E{
-			Code:    response.InvalidJSONBody,
-			Message: "invalid request",
-		})
-		return
-	}
-
-	//Do Some thing here
-
-	response.Success(c, http.StatusOK, response.S{Data: 34})
-
-}
-
-func (s *Subscriber) UpdateSomething(c *gin.Context) {
-	sr := SubscribeRequest{}
-	if err := c.ShouldBind(&sr); err != nil {
-		response.Error(c, http.StatusBadRequest, response.E{
-			Code:    response.InvalidJSONBody,
-			Message: "invalid request",
-		})
-		return
-	}
-
-	//Do Some thing here
-
-	response.Success(c, http.StatusOK, response.S{})
-
-}
-
-func (s *Subscriber) DeleteSomething(c *gin.Context) {
-	sr := SubscribeRequest{}
-	if err := c.ShouldBind(&sr); err != nil {
-		response.Error(c, http.StatusBadRequest, response.E{
-			Code:    response.InvalidJSONBody,
-			Message: "invalid request",
-		})
-		return
-	}
-
-	//Do Some thing here
-
-	response.Success(c, http.StatusOK, response.S{})
-
 }
 
 func (s *Subscriber) Run() {
