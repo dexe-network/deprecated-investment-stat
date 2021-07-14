@@ -1,0 +1,322 @@
+basePath: /
+definitions:
+  models.GlobalTokenWhitelist:
+    properties:
+      address:
+        type: string
+      blockNumber:
+        description: blockNumber bigint,
+        type: integer
+      createdAt:
+        type: string
+      date:
+        type: string
+      id:
+        type: integer
+      tx:
+        description: tx character varying(255),
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  models.Pool:
+    properties:
+      basicTokenAdr:
+        type: string
+      blockNumber:
+        description: blockNumber bigint,
+        type: integer
+      createdAt:
+        type: string
+      creatorAdr:
+        type: string
+      date:
+        type: string
+      dexeCommissionDen:
+        type: integer
+      dexeCommissionNum:
+        type: integer
+      id:
+        type: integer
+      investorCommissionDen:
+        type: integer
+      investorCommissionNum:
+        type: integer
+      investorRestricted:
+        type: boolean
+      isActualOn:
+        type: boolean
+      name:
+        type: string
+      poolAdr:
+        type: string
+      symbol:
+        type: string
+      totalSupply:
+        type: string
+      traderCommissionDen:
+        type: integer
+      traderCommissionNum:
+        type: integer
+      tx:
+        description: tx character varying(255),
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  models.PoolTransfer:
+    properties:
+      amount:
+        type: string
+      blockNumber:
+        description: blockNumber bigint,
+        type: integer
+      createdAt:
+        type: string
+      date:
+        type: string
+      id:
+        type: integer
+      poolAdr:
+        type: string
+      tx:
+        description: tx character varying(255),
+        type: string
+      type:
+        description: enum('deposit', 'withdraw')
+        type: string
+      updatedAt:
+        type: string
+      wallet:
+        type: string
+    type: object
+  response.E:
+    properties:
+      code:
+        type: integer
+      context:
+        type: object
+      message:
+        type: string
+    type: object
+  response.S:
+    properties:
+      data:
+        type: object
+      datetime:
+        type: string
+    type: object
+  service_routes.responseTrade:
+    properties:
+      amountIn:
+        type: string
+      amountOutMin:
+        type: string
+      blockNumber:
+        type: integer
+      createdAt:
+        type: string
+      date:
+        type: string
+      deadline:
+        type: string
+      id:
+        type: integer
+      path:
+        items:
+          type: string
+        type: array
+      traderPool:
+        type: string
+      tx:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: Dexe Investing Api
+  title: Dexe Investing Api
+  version: "1.0"
+paths:
+  /info/global-token-whitelist:
+    get:
+      consumes:
+      - application/json
+      description: Get Global Token Whitelist
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.S'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.GlobalTokenWhitelist'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.E'
+      summary: Get Global Token Whitelist
+      tags:
+      - Info
+  /pool-transfers/deposits/{wallet}:
+    get:
+      consumes:
+      - application/json
+      description: Get Deposits By Wallet
+      parameters:
+      - description: Wallet Address
+        in: path
+        name: wallet
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.S'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.PoolTransfer'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.E'
+      summary: Get Deposits By Wallet
+      tags:
+      - PoolTransfers
+  /pool-transfers/withdrawals/{wallet}:
+    get:
+      consumes:
+      - application/json
+      description: Get Withdrawals By Wallet
+      parameters:
+      - description: Wallet Address
+        in: path
+        name: wallet
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.S'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.PoolTransfer'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.E'
+      summary: Get Withdrawals By Wallet
+      tags:
+      - PoolTransfers
+  /pools:
+    get:
+      consumes:
+      - application/json
+      description: Get All Trader Pools
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.S'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.Pool'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.E'
+      summary: Get All Trader Pools
+      tags:
+      - Pools
+  /pools/{wallet}:
+    get:
+      consumes:
+      - application/json
+      description: Get Pools By Creator Wallet
+      parameters:
+      - description: Pool creator wallet
+        in: path
+        name: wallet
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.S'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.Pool'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.E'
+      summary: Get Pools By Creator Wallet
+      tags:
+      - Pools
+  /trades/{traderPool}:
+    get:
+      consumes:
+      - application/json
+      description: Get Trades By PoolAdr
+      parameters:
+      - description: traderPool Address
+        in: path
+        name: traderPool
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.S'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/service_routes.responseTrade'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.E'
+      summary: Get Trades By PoolAdr
+      tags:
+      - Trades
+swagger: "2.0"

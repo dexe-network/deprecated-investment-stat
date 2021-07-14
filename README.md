@@ -60,3 +60,7 @@ pgadmin: http://localhost:5050/
 pgadmin: admin@admin.com
 
 pgadmin: root
+
+swag init --parseDependency --parseInternal --parseDepth 2 -g ./cmd/app/main.go
+
+swag init --parseDependency --parseInternal --parseDepth 5 -g ./cmd/app/main.go

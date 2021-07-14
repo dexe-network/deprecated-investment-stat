@@ -18,6 +18,7 @@ type Routes struct {
 	Info          *service_routes.InfoRoutes
 	Pools         *service_routes.PoolsRoutes
 	PoolTransfers *service_routes.PoolTransfersRoutes
+	Trades        *service_routes.TradesRoutes
 }
 
 func InitServices(ctx context.Context, cancel func(), log *zap.Logger, st *storage.Storage, r *runway.Runway) *Services {
@@ -28,6 +29,7 @@ func InitServices(ctx context.Context, cancel func(), log *zap.Logger, st *stora
 			Info:          &service_routes.InfoRoutes{Context: routesContext},
 			Pools:         &service_routes.PoolsRoutes{Context: routesContext},
 			PoolTransfers: &service_routes.PoolTransfersRoutes{Context: routesContext},
+			Trades:        &service_routes.TradesRoutes{Context: routesContext},
 		},
 	}
 }

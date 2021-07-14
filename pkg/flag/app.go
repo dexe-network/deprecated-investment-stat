@@ -16,6 +16,6 @@ func (f *Flag) IsApp() bool {
 func (f *Flag) App() *Flag {
 	f.app = true
 	pflag.String("app-env", AppEnvProd, "Application environment")
-	pflag.String("app-addr", "0.0.0.0:3000", "Application address")
+	pflag.String("app-addr", "localhost:3000", "Application address")
 	return f
 }

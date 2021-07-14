@@ -11,6 +11,14 @@ type InfoRoutes struct {
 	Context *RoutesContext
 }
 
+// @Description Get Global Token Whitelist
+// @Summary Get Global Token Whitelist
+// @Tags Info
+// @Accept  json
+// @Produce  json
+// @Success 200 {object} response.S{data=[]models.GlobalTokenWhitelist}
+// @Failure 400 {object} response.E
+// @Router /info/global-token-whitelist [get]
 func (p *InfoRoutes) GetGlobalTokenWhitelist(c *gin.Context) {
 	var tokens []models.GlobalTokenWhitelist
 	if err := p.Context.st.DB.Find(&tokens).Error; err != nil {
