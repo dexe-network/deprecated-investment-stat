@@ -2,7 +2,9 @@ package helpers
 
 import (
 	"github.com/ethereum/go-ethereum/common"
+	"math/rand"
 	"regexp"
+	"time"
 	"unicode/utf8"
 )
 
@@ -21,4 +23,11 @@ func IsValidAddress(v string) bool {
 func TrimFirstRune(s string) string {
 	_, i := utf8.DecodeRuneInString(s)
 	return s[i:]
+}
+
+func RandomNonce() int {
+	rand.Seed(time.Now().UnixNano())
+	min := 100000
+	max := 999999
+	return rand.Intn(max-min+1) + min
 }

@@ -20,6 +20,7 @@ func (f *Flag) CORS() *Flag {
 		"Accept",
 		"User-Agent",
 		"X-Refresh-Token",
+		"X-ELEKTRA",
 	}, "")
 	pflag.StringSlice("cors-exposed-headers", []string{
 		"Origin",
@@ -38,7 +39,7 @@ func (f *Flag) CORS() *Flag {
 		"HEAD",
 	}, "")
 	pflag.StringSlice("cors-allowed-origins", []string{
-		"https://0.0.0.0:3008",
+		"https://0.0.0.0:3008", "https://localhost:3000", "http://localhost:4200", "http://0.0.0.0:4200",
 	}, "")
 
 	return f

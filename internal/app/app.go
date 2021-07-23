@@ -31,7 +31,7 @@ func Run(ctx context.Context, cancel func(), fl *flag.Flag) {
 
 	servicesInst := services.InitServices(ctx, cancel, log, st, r)
 
-	router.InitRouter(e, ctx, log, servicesInst)
+	router.InitRouter(e, ctx, log, servicesInst, st)
 	srv, errCh := r.HttpServer(runway.HttpServerConfig{
 		Router: e,
 	})

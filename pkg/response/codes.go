@@ -27,7 +27,7 @@ const (
 	BuildRequestError             = 24
 	UnexpectedResponseCode        = 25
 	ServiceLookupFailed           = 26
-
+	Unauthorized = 401
 	InvalidEmail                         = 1001
 	EmailAlreadyTaken                    = 1002
 	CheckEmailExistsFailed               = 1003
