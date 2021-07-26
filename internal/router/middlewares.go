@@ -3,6 +3,7 @@ package router
 import (
 	"dex-trades-parser/internal/models"
 	"dex-trades-parser/internal/storage"
+	"dex-trades-parser/pkg/flag"
 	"dex-trades-parser/pkg/helpers"
 	"dex-trades-parser/pkg/response"
 	"encoding/base64"
@@ -11,18 +12,23 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/gin-gonic/gin"
+	"github.com/spf13/viper"
 	"net/http"
 	"strings"
 )
 
 func СheckAuthSign(st *storage.Storage) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		authRawHeader := c.Request.Header.Get("X-ELEKTRA")
+		authRawHeader := c.Request.Header.Get("X-MORPH")
 		if authRawHeader == "" {
 			response.Error(c, http.StatusForbidden, response.E{
 				Code:    response.Unauthorized,
 				Message:"No Authorization header provided",
 			})
+			return
+		}
+
+		if viper.GetString("app-env") == flag.AppEnvDev && authRawHeader == viper.GetString("TEST_AUTH_SIGN_HEADER")  {
 			return
 		}
 

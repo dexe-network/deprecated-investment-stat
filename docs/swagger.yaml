@@ -106,6 +106,11 @@ definitions:
       datetime:
         type: string
     type: object
+  service_routes.GetNonceResponse:
+    properties:
+      nonce:
+        type: integer
+    type: object
   service_routes.responseTrade:
     properties:
       amountIn:
@@ -165,6 +170,36 @@ paths:
       summary: Get Global Token Whitelist
       tags:
       - Info
+  /nonce/{wallet}:
+    get:
+      consumes:
+      - application/json
+      description: Get Sign Nonce
+      parameters:
+      - description: User wallet address
+        in: path
+        name: wallet
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.S'
+            - properties:
+                data:
+                  $ref: '#/definitions/service_routes.GetNonceResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.E'
+      summary: Get Sign Nonce
+      tags:
+      - Nonce
   /pool-transfers/deposits/{wallet}:
     get:
       consumes:
@@ -319,4 +354,40 @@ paths:
       summary: Get Trades By PoolAdr
       tags:
       - Trades
+  /user/{wallet}/avatar:
+    put:
+      consumes:
+      - application/json
+      description: Update User Avatar [SIGN]
+      parameters:
+      - default: iQxX3slnRg
+        description: An authorization header
+        in: header
+        name: X-MORPH
+        required: true
+        type: string
+      - description: User wallet address
+        in: path
+        name: wallet
+        required: true
+        type: string
+      - description: Body with image
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.S'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.E'
+      summary: Update User Avatar [SIGN]
+      tags:
+      - User
 swagger: "2.0"

@@ -68,6 +68,56 @@ var doc = `{
                 }
             }
         },
+        "/nonce/{wallet}": {
+            "get": {
+                "description": "Get Sign Nonce",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Nonce"
+                ],
+                "summary": "Get Sign Nonce",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User wallet address",
+                        "name": "wallet",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.S"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/service_routes.GetNonceResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.E"
+                        }
+                    }
+                }
+            }
+        },
         "/pool-transfers/deposits/{wallet}": {
             "get": {
                 "description": "Get Deposits By Wallet",
@@ -323,6 +373,59 @@ var doc = `{
                     }
                 }
             }
+        },
+        "/user/{wallet}/avatar": {
+            "put": {
+                "description": "Update User Avatar [SIGN]",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Update User Avatar [SIGN]",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "iQxX3slnRg",
+                        "description": "An authorization header",
+                        "name": "X-MORPH",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "User wallet address",
+                        "name": "wallet",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Body with image",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.S"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.E"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -481,6 +584,14 @@ var doc = `{
                 },
                 "datetime": {
                     "type": "string"
+                }
+            }
+        },
+        "service_routes.GetNonceResponse": {
+            "type": "object",
+            "properties": {
+                "nonce": {
+                    "type": "integer"
                 }
             }
         },

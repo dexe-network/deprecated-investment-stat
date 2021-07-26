@@ -51,7 +51,8 @@ func InitRouter(
 	e.GET(NoncePrefix+"/:wallet", services.Routes.Nonce.GetNonce)
 
 	// User
-	e.POST(UserPrefix+"/:wallet/avatar", СheckAuthSign(st), services.Routes.User.PostAvatarUpdate)
+	e.PUT(UserPrefix+"/:wallet/avatar", СheckAuthSign(st), services.Routes.User.PutAvatarUpdate)
+	//
 
 	// Swagger
 	url := ginSwagger.URL("http://" + viper.GetString("app-addr") + "/swagger/doc.json") // The url pointing to API definition
