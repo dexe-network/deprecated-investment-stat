@@ -168,3 +168,36 @@ func (p *UserRoutes) PutAvatarUpdate(c *gin.Context) {
 	response.Success(c, http.StatusOK, response.S{Data: newUser})
 
 }
+
+// @Description Get User Info
+// @Summary Get User Info
+// @Tags User
+// @Accept  json
+// @Produce  json
+// @Param wallet path string true "User wallet address"
+// @Success 200 {object} response.S{data=[]models.User}
+// @Failure 400 {object} response.E
+// @Router /user/{wallet} [get]
+func (p *UserRoutes) GetUserInfo(c *gin.Context) {
+	if helpers.IsValidAddress(c.Param("wallet")) == false {
+		response.Error(c, http.StatusBadRequest, response.E{
+			Code:    response.InvalidJSONBody,
+			Message: "invalid wallet address",
+		})
+		return
+	}
+	wallet := strings.ToLower(c.Param("wallet"))
+
+	var user models.User
+	if err := p.Context.st.DB.First(&user, "\"wallet\" = ?", wallet).
+		Error; err != nil {
+		response.Error(c, http.StatusBadRequest, response.E{
+			Code:    response.InvalidJSONBody,
+			Message: "User not exist",
+		})
+		return
+	}
+
+	response.Success(c, http.StatusOK, response.S{Data: user})
+
+}

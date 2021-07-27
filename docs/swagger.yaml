@@ -369,6 +369,38 @@ paths:
       summary: Get Trades By PoolAdr
       tags:
       - Trades
+  /user/{wallet}:
+    get:
+      consumes:
+      - application/json
+      description: Get User Info
+      parameters:
+      - description: User wallet address
+        in: path
+        name: wallet
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.S'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.User'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.E'
+      summary: Get User Info
+      tags:
+      - User
   /user/{wallet}/avatar:
     put:
       consumes:

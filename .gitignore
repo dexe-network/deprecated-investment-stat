@@ -1,2 +1,3 @@
 .idea
-public
+public/avatars/*
+!public/avatars/0x7780cc21da4c873146359269dfc4c67e7a85ff45.png
