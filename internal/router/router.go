@@ -21,7 +21,7 @@ const (
 	InfoPrefix          = "/info"
 	TradesPrefix        = "/trades"
 	NoncePrefix         = "/nonce"
-	UserPrefix         = "/user"
+	UserPrefix          = "/user"
 )
 
 func InitRouter(
@@ -51,7 +51,11 @@ func InitRouter(
 	e.GET(NoncePrefix+"/:wallet", services.Routes.Nonce.GetNonce)
 
 	// User
+	//e.GET(UserPrefix+"/:wallet", services.Routes.User.GetUserInfo)
+
+	// Required [SIGN]
 	e.PUT(UserPrefix+"/:wallet/avatar", СheckAuthSign(st), services.Routes.User.PutAvatarUpdate)
+	e.POST(UserPrefix+"/signup", СheckAuthSign(st), services.Routes.User.PostSignUp)
 	//
 
 	// Swagger

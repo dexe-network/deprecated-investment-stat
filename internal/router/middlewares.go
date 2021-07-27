@@ -19,7 +19,7 @@ import (
 
 func СheckAuthSign(st *storage.Storage) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		authRawHeader := c.Request.Header.Get("X-MORPH")
+		authRawHeader := c.Request.Header.Get("x-morph")
 		if authRawHeader == "" {
 			response.Error(c, http.StatusForbidden, response.E{
 				Code:    response.Unauthorized,

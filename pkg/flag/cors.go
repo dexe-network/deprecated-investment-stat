@@ -20,7 +20,7 @@ func (f *Flag) CORS() *Flag {
 		"Accept",
 		"User-Agent",
 		"X-Refresh-Token",
-		"X-MORPH",
+		"x-morph",
 	}, "")
 	pflag.StringSlice("cors-exposed-headers", []string{
 		"Origin",

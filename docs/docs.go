@@ -374,6 +374,80 @@ var doc = `{
                 }
             }
         },
+        "/user/signup": {
+            "post": {
+                "description": "User SignUp [SIGN]",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "User SignUp [SIGN]",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "iQxX3slnRg",
+                        "description": "An authorization header",
+                        "name": "x-morph",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "User nickname",
+                        "name": "nickname",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "User wallet",
+                        "name": "wallet",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Body with image",
+                        "name": "file",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.S"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.User"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.E"
+                        }
+                    }
+                }
+            }
+        },
         "/user/{wallet}/avatar": {
             "put": {
                 "description": "Update User Avatar [SIGN]",
@@ -392,7 +466,7 @@ var doc = `{
                         "type": "string",
                         "default": "iQxX3slnRg",
                         "description": "An authorization header",
-                        "name": "X-MORPH",
+                        "name": "x-morph",
                         "in": "header",
                         "required": true
                     },
@@ -552,6 +626,29 @@ var doc = `{
                 },
                 "type": {
                     "description": "enum('deposit', 'withdraw')",
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "wallet": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.User": {
+            "type": "object",
+            "properties": {
+                "avatar": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "nickname": {
                     "type": "string"
                 },
                 "updatedAt": {

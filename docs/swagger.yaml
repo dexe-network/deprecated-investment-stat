@@ -90,6 +90,21 @@ definitions:
       wallet:
         type: string
     type: object
+  models.User:
+    properties:
+      avatar:
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: integer
+      nickname:
+        type: string
+      updatedAt:
+        type: string
+      wallet:
+        type: string
+    type: object
   response.E:
     properties:
       code:
@@ -363,7 +378,7 @@ paths:
       - default: iQxX3slnRg
         description: An authorization header
         in: header
-        name: X-MORPH
+        name: x-morph
         required: true
         type: string
       - description: User wallet address
@@ -388,6 +403,53 @@ paths:
           schema:
             $ref: '#/definitions/response.E'
       summary: Update User Avatar [SIGN]
+      tags:
+      - User
+  /user/signup:
+    post:
+      consumes:
+      - application/json
+      description: User SignUp [SIGN]
+      parameters:
+      - default: iQxX3slnRg
+        description: An authorization header
+        in: header
+        name: x-morph
+        required: true
+        type: string
+      - description: User nickname
+        in: formData
+        name: nickname
+        required: true
+        type: string
+      - description: User wallet
+        in: formData
+        name: wallet
+        required: true
+        type: string
+      - description: Body with image
+        in: formData
+        name: file
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.S'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.User'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.E'
+      summary: User SignUp [SIGN]
       tags:
       - User
 swagger: "2.0"
