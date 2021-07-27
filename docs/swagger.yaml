@@ -390,9 +390,7 @@ paths:
             - $ref: '#/definitions/response.S'
             - properties:
                 data:
-                  items:
-                    $ref: '#/definitions/models.User'
-                  type: array
+                  $ref: '#/definitions/models.User'
               type: object
         "400":
           description: Bad Request
@@ -429,7 +427,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.S'
+            allOf:
+            - $ref: '#/definitions/response.S'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.User'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -473,9 +476,7 @@ paths:
             - $ref: '#/definitions/response.S'
             - properties:
                 data:
-                  items:
-                    $ref: '#/definitions/models.User'
-                  type: array
+                  $ref: '#/definitions/models.User'
               type: object
         "400":
           description: Bad Request

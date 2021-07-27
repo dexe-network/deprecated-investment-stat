@@ -429,10 +429,7 @@ var doc = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/models.User"
-                                            }
+                                            "$ref": "#/definitions/models.User"
                                         }
                                     }
                                 }
@@ -482,10 +479,7 @@ var doc = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/models.User"
-                                            }
+                                            "$ref": "#/definitions/models.User"
                                         }
                                     }
                                 }
@@ -542,7 +536,19 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/response.S"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.S"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.User"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {

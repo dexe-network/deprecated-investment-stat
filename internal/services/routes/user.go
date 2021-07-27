@@ -30,7 +30,7 @@ type SignUp struct {
 // @Param nickname formData string true "User nickname"
 // @Param wallet formData string true "User wallet"
 // @Param file formData file false "Body with image"
-// @Success 200 {object} response.S{data=[]models.User}
+// @Success 200 {object} response.S{data=models.User}
 // @Failure 400 {object} response.E
 // @Router /user/signup [post]
 func (p *UserRoutes) PostSignUp(c *gin.Context) {
@@ -106,7 +106,7 @@ func (p *UserRoutes) PostSignUp(c *gin.Context) {
 // @Param x-morph header string true "An authorization header" default(iQxX3slnRg)
 // @Param wallet path string true "User wallet address"
 // @Param file formData file true "Body with image"
-// @Success 200 {object} response.S{}
+// @Success 200 {object} response.S{data=models.User}
 // @Failure 400 {object} response.E
 // @Router /user/{wallet}/avatar [put]
 func (p *UserRoutes) PutAvatarUpdate(c *gin.Context) {
@@ -175,7 +175,7 @@ func (p *UserRoutes) PutAvatarUpdate(c *gin.Context) {
 // @Accept  json
 // @Produce  json
 // @Param wallet path string true "User wallet address"
-// @Success 200 {object} response.S{data=[]models.User}
+// @Success 200 {object} response.S{data=models.User}
 // @Failure 400 {object} response.E
 // @Router /user/{wallet} [get]
 func (p *UserRoutes) GetUserInfo(c *gin.Context) {
