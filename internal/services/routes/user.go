@@ -191,8 +191,8 @@ func (p *UserRoutes) GetUserInfo(c *gin.Context) {
 	var user models.User
 	if err := p.Context.st.DB.First(&user, "\"wallet\" = ?", wallet).
 		Error; err != nil {
-		response.Error(c, http.StatusBadRequest, response.E{
-			Code:    response.InvalidJSONBody,
+		response.Error(c, http.StatusAccepted, response.E{
+			Code:    response.AccountNotFound,
 			Message: "User not exist",
 		})
 		return

@@ -13,6 +13,7 @@ import (
 	"go.uber.org/zap"
 	"net/http"
 	_ "net/http/pprof"
+	"path/filepath"
 )
 
 const (
@@ -57,6 +58,10 @@ func InitRouter(
 	e.PUT(UserPrefix+"/:wallet/avatar", СheckAuthSign(st), services.Routes.User.PutAvatarUpdate)
 	e.POST(UserPrefix+"/signup", СheckAuthSign(st), services.Routes.User.PostSignUp)
 	//
+
+	// Static Public folder
+	path, _ := filepath.Abs("public")
+	e.Static("/assets", path)
 
 	// Swagger
 	url := ginSwagger.URL("http://" + viper.GetString("app-addr") + "/swagger/doc.json") // The url pointing to API definition
