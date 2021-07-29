@@ -56,6 +56,7 @@ func InitRouter(
 
 	// Required [SIGN]
 	e.PUT(UserPrefix+"/:wallet/avatar", СheckAuthSign(st), services.Routes.User.PutAvatarUpdate)
+	e.PUT(UserPrefix+"/:wallet/nickname", СheckAuthSign(st), services.Routes.User.PutNicknameUpdate)
 	e.POST(UserPrefix+"/signup", СheckAuthSign(st), services.Routes.User.PostSignUp)
 	//
 

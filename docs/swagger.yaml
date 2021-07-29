@@ -402,7 +402,7 @@ paths:
   /user/{wallet}/avatar:
     put:
       consumes:
-      - application/json
+      - multipart/form-data
       description: Update User Avatar [SIGN]
       parameters:
       - default: iQxX3slnRg
@@ -440,10 +440,51 @@ paths:
       summary: Update User Avatar [SIGN]
       tags:
       - User
+  /user/{wallet}/nickname:
+    put:
+      consumes:
+      - multipart/form-data
+      description: Update User Nickname [SIGN]
+      parameters:
+      - default: iQxX3slnRg
+        description: An authorization header
+        in: header
+        name: x-morph
+        required: true
+        type: string
+      - description: User wallet address
+        in: path
+        name: wallet
+        required: true
+        type: string
+      - description: New user nickname
+        in: formData
+        name: nickname
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.S'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.User'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.E'
+      summary: Update User Nickname [SIGN]
+      tags:
+      - User
   /user/signup:
     post:
       consumes:
-      - application/json
+      - multipart/form-data
       description: User SignUp [SIGN]
       parameters:
       - default: iQxX3slnRg

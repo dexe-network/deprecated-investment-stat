@@ -16,7 +16,7 @@ type UserRoutes struct {
 	Context *RoutesContext
 }
 
-type SignUp struct {
+type SignUpBody struct {
 	Nickname string `form:"nickname" binding:"required,contains"`
 	Wallet   string `form:"wallet" binding:"required,contains"`
 }
@@ -24,7 +24,7 @@ type SignUp struct {
 // @Description User SignUp [SIGN]
 // @Summary User SignUp [SIGN]
 // @Tags User
-// @Accept  json
+// @Accept  multipart/form-data
 // @Produce  json
 // @Param x-morph header string true "An authorization header" default(iQxX3slnRg)
 // @Param nickname formData string true "User nickname"
@@ -34,7 +34,7 @@ type SignUp struct {
 // @Failure 400 {object} response.E
 // @Router /user/signup [post]
 func (p *UserRoutes) PostSignUp(c *gin.Context) {
-	var signUp SignUp
+	var signUp SignUpBody
 	if err := c.ShouldBind(&signUp); err != nil {
 		response.Error(c, http.StatusBadRequest, response.E{
 			Code:    response.InvalidJSONBody,
@@ -98,10 +98,68 @@ func (p *UserRoutes) PostSignUp(c *gin.Context) {
 
 }
 
+type UpdateNicknameBody struct {
+	Nickname string `form:"nickname" binding:"required,contains"`
+}
+
+// @Description Update User Nickname [SIGN]
+// @Summary Update User Nickname [SIGN]
+// @Tags User
+// @Accept  multipart/form-data
+// @Produce  json
+// @Param x-morph header string true "An authorization header" default(iQxX3slnRg)
+// @Param wallet path string true "User wallet address"
+// @Param nickname formData string true "New user nickname"
+// @Success 200 {object} response.S{data=models.User}
+// @Failure 400 {object} response.E
+// @Router /user/{wallet}/nickname [put]
+func (p *UserRoutes) PutNicknameUpdate(c *gin.Context) {
+	var nicknameBody UpdateNicknameBody
+	if err := c.ShouldBind(&nicknameBody); err != nil {
+		response.Error(c, http.StatusBadRequest, response.E{
+			Code:    response.InvalidJSONBody,
+			Message: "invalid form data",
+		})
+		return
+	}
+
+	if helpers.IsValidAddress(c.Param("wallet")) == false {
+		response.Error(c, http.StatusBadRequest, response.E{
+			Code:    response.InvalidJSONBody,
+			Message: "invalid wallet address",
+		})
+		return
+	}
+	wallet := strings.ToLower(c.Param("wallet"))
+
+	var updateUser models.User
+	if err := p.Context.st.DB.First(&updateUser, "\"wallet\" = ?", wallet).
+		Error; err != nil {
+		response.Error(c, http.StatusBadRequest, response.E{
+			Code:    response.InvalidJSONBody,
+			Message: "User not exist",
+		})
+		return
+	}
+
+	updateUser.Nickname = nicknameBody.Nickname
+
+	if err := p.Context.st.DB.Save(&updateUser).Error; err != nil {
+		response.Error(c, http.StatusBadRequest, response.E{
+			Code:    response.InvalidJSONBody,
+			Message: "Can't save user to DB",
+		})
+		return
+	}
+
+	response.Success(c, http.StatusOK, response.S{Data: updateUser})
+
+}
+
 // @Description Update User Avatar [SIGN]
 // @Summary Update User Avatar [SIGN]
 // @Tags User
-// @Accept  json
+// @Accept  multipart/form-data
 // @Produce  json
 // @Param x-morph header string true "An authorization header" default(iQxX3slnRg)
 // @Param wallet path string true "User wallet address"

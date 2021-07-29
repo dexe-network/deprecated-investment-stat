@@ -378,7 +378,7 @@ var doc = `{
             "post": {
                 "description": "User SignUp [SIGN]",
                 "consumes": [
-                    "application/json"
+                    "multipart/form-data"
                 ],
                 "produces": [
                     "application/json"
@@ -499,7 +499,7 @@ var doc = `{
             "put": {
                 "description": "Update User Avatar [SIGN]",
                 "consumes": [
-                    "application/json"
+                    "multipart/form-data"
                 ],
                 "produces": [
                     "application/json"
@@ -528,6 +528,71 @@ var doc = `{
                         "type": "file",
                         "description": "Body with image",
                         "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.S"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.User"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.E"
+                        }
+                    }
+                }
+            }
+        },
+        "/user/{wallet}/nickname": {
+            "put": {
+                "description": "Update User Nickname [SIGN]",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Update User Nickname [SIGN]",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "iQxX3slnRg",
+                        "description": "An authorization header",
+                        "name": "x-morph",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "User wallet address",
+                        "name": "wallet",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "New user nickname",
+                        "name": "nickname",
                         "in": "formData",
                         "required": true
                     }
