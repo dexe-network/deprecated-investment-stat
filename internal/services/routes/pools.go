@@ -52,8 +52,9 @@ func (p *PoolsRoutes) GetPoolsByWallet(c *gin.Context) {
 		return
 	}
 
+	wallet := c.Param("wallet")
 	var pools []models.Pool
-	if err := p.Context.st.DB.Find(&pools, "\"creatorAdr\" = ?", c.Param("wallet")).Error; err != nil {
+	if err := p.Context.st.DB.Find(&pools, "LOWER(\"creatorAdr\") = LOWER(?)", wallet).Error; err != nil {
 		response.Error(c, http.StatusBadRequest, response.E{
 			Code:    response.InvalidJSONBody,
 			Message: "invalid request",

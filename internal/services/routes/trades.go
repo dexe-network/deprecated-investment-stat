@@ -46,8 +46,9 @@ func (p *TradesRoutes) GetTradesByPoolAdr(c *gin.Context) {
 		return
 	}
 
+	traderPool := c.Param("traderPool")
 	var pools []models.Trade
-	if err := p.Context.st.DB.Find(&pools, "\"traderPool\" = ?", c.Param("traderPool")).Error; err != nil {
+	if err := p.Context.st.DB.Find(&pools, "LOWER(\"traderPool\") = LOWER(?)", traderPool).Error; err != nil {
 		response.Error(c, http.StatusBadRequest, response.E{
 			Code:    response.InvalidJSONBody,
 			Message: "invalid request",

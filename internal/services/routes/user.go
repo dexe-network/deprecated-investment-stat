@@ -9,7 +9,6 @@ import (
 	"gorm.io/gorm"
 	"net/http"
 	"path/filepath"
-	"strings"
 )
 
 type UserRoutes struct {
@@ -50,10 +49,10 @@ func (p *UserRoutes) PostSignUp(c *gin.Context) {
 		})
 		return
 	}
-	wallet := strings.ToLower(signUp.Wallet)
 
+	wallet := signUp.Wallet
 	var newUser models.User
-	if err := p.Context.st.DB.First(&newUser, "\"wallet\" = ?", wallet).
+	if err := p.Context.st.DB.First(&newUser, "LOWER(\"wallet\") = LOWER(?)", wallet).
 		Error; (err != nil && !errors.Is(err, gorm.ErrRecordNotFound)) || newUser.Id > 0 {
 		response.Error(c, http.StatusBadRequest, response.E{
 			Code:    response.InvalidJSONBody,
@@ -130,10 +129,10 @@ func (p *UserRoutes) PutNicknameUpdate(c *gin.Context) {
 		})
 		return
 	}
-	wallet := strings.ToLower(c.Param("wallet"))
 
+	wallet := c.Param("wallet")
 	var updateUser models.User
-	if err := p.Context.st.DB.First(&updateUser, "\"wallet\" = ?", wallet).
+	if err := p.Context.st.DB.First(&updateUser, "LOWER(\"wallet\") = LOWER(?)", wallet).
 		Error; err != nil {
 		response.Error(c, http.StatusBadRequest, response.E{
 			Code:    response.InvalidJSONBody,
@@ -175,10 +174,10 @@ func (p *UserRoutes) PutAvatarUpdate(c *gin.Context) {
 		})
 		return
 	}
-	wallet := strings.ToLower(c.Param("wallet"))
 
+	wallet := c.Param("wallet")
 	var newUser models.User
-	if err := p.Context.st.DB.First(&newUser, "\"wallet\" = ?", wallet).
+	if err := p.Context.st.DB.First(&newUser, "LOWER(\"wallet\") = LOWER(?)", wallet).
 		Error; err != nil {
 		response.Error(c, http.StatusBadRequest, response.E{
 			Code:    response.InvalidJSONBody,
@@ -244,10 +243,10 @@ func (p *UserRoutes) GetUserInfo(c *gin.Context) {
 		})
 		return
 	}
-	wallet := strings.ToLower(c.Param("wallet"))
 
+	wallet := c.Param("wallet")
 	var user models.User
-	if err := p.Context.st.DB.First(&user, "\"wallet\" = ?", wallet).
+	if err := p.Context.st.DB.First(&user, "LOWER(\"wallet\") = LOWER(?)", wallet).
 		Error; err != nil {
 		response.Error(c, http.StatusAccepted, response.E{
 			Code:    response.AccountNotFound,

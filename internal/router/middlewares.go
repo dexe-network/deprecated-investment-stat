@@ -23,12 +23,12 @@ func СheckAuthSign(st *storage.Storage) gin.HandlerFunc {
 		if authRawHeader == "" {
 			response.Error(c, http.StatusForbidden, response.E{
 				Code:    response.Unauthorized,
-				Message:"No Authorization header provided",
+				Message: "No Authorization header provided",
 			})
 			return
 		}
 
-		if viper.GetString("app-env") == flag.AppEnvDev && authRawHeader == viper.GetString("TEST_AUTH_SIGN_HEADER")  {
+		if viper.GetString("app-env") == flag.AppEnvDev && authRawHeader == viper.GetString("TEST_AUTH_SIGN_HEADER") {
 			return
 		}
 
@@ -36,7 +36,7 @@ func СheckAuthSign(st *storage.Storage) gin.HandlerFunc {
 		if err != nil {
 			response.Error(c, http.StatusForbidden, response.E{
 				Code:    response.Unauthorized,
-				Message:"Wrong Authorization header value provided",
+				Message: "Wrong Authorization header value provided",
 			})
 			return
 		}
@@ -52,12 +52,9 @@ func СheckAuthSign(st *storage.Storage) gin.HandlerFunc {
 
 		walletAdr := strings.ToLower(parsedHeader[0])
 		signature := parsedHeader[1]
-
 		var nonce models.Nonce
 		if err := st.DB.First(&nonce,
-			&models.Nonce{
-				Wallet: walletAdr,
-			}).Error; err != nil {
+			"LOWER(wallet) = LOWER(?)", walletAdr).Error; err != nil {
 			response.Error(c, http.StatusForbidden, response.E{
 				Code:    response.Unauthorized,
 				Message: "Nonce not found",
@@ -71,7 +68,7 @@ func СheckAuthSign(st *storage.Storage) gin.HandlerFunc {
 		if err != nil {
 			response.Error(c, http.StatusForbidden, response.E{
 				Code:    response.Unauthorized,
-				Message:"Wrong Sign Recover",
+				Message: "Wrong Sign Recover",
 			})
 			return
 		}

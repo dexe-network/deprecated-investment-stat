@@ -321,6 +321,56 @@ var doc = `{
                 }
             }
         },
+        "/trader/{traderWallet}": {
+            "get": {
+                "description": "Get Trader Info",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Trader"
+                ],
+                "summary": "Get Trader Info",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Trader wallet address",
+                        "name": "traderWallet",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.S"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/service_routes.TraderInfoResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.E"
+                        }
+                    }
+                }
+            }
+        },
         "/trades/{traderPool}": {
             "get": {
                 "description": "Get Trades By PoolAdr",
@@ -812,6 +862,17 @@ var doc = `{
             "type": "object",
             "properties": {
                 "nonce": {
+                    "type": "integer"
+                }
+            }
+        },
+        "service_routes.TraderInfoResponse": {
+            "type": "object",
+            "properties": {
+                "copiers": {
+                    "type": "number"
+                },
+                "fund": {
                     "type": "integer"
                 }
             }

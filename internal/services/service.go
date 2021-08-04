@@ -20,7 +20,8 @@ type Routes struct {
 	PoolTransfers *service_routes.PoolTransfersRoutes
 	Trades        *service_routes.TradesRoutes
 	Nonce         *service_routes.NonceRoutes
-	User         *service_routes.UserRoutes
+	User          *service_routes.UserRoutes
+	Trader        *service_routes.TraderRoutes
 }
 
 func InitServices(ctx context.Context, cancel func(), log *zap.Logger, st *storage.Storage, r *runway.Runway) *Services {
@@ -33,7 +34,8 @@ func InitServices(ctx context.Context, cancel func(), log *zap.Logger, st *stora
 			PoolTransfers: &service_routes.PoolTransfersRoutes{Context: routesContext},
 			Trades:        &service_routes.TradesRoutes{Context: routesContext},
 			Nonce:         &service_routes.NonceRoutes{Context: routesContext},
-			User:         &service_routes.UserRoutes{Context: routesContext},
+			User:          &service_routes.UserRoutes{Context: routesContext},
+			Trader:        &service_routes.TraderRoutes{Context: routesContext},
 		},
 	}
 }

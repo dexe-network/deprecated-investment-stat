@@ -126,6 +126,13 @@ definitions:
       nonce:
         type: integer
     type: object
+  service_routes.TraderInfoResponse:
+    properties:
+      copiers:
+        type: number
+      fund:
+        type: integer
+    type: object
   service_routes.responseTrade:
     properties:
       amountIn:
@@ -337,6 +344,36 @@ paths:
       summary: Get Pools By Creator Wallet
       tags:
       - Pools
+  /trader/{traderWallet}:
+    get:
+      consumes:
+      - application/json
+      description: Get Trader Info
+      parameters:
+      - description: Trader wallet address
+        in: path
+        name: traderWallet
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.S'
+            - properties:
+                data:
+                  $ref: '#/definitions/service_routes.TraderInfoResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.E'
+      summary: Get Trader Info
+      tags:
+      - Trader
   /trades/{traderPool}:
     get:
       consumes:

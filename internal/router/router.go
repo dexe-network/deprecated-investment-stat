@@ -23,6 +23,7 @@ const (
 	TradesPrefix        = "/trades"
 	NoncePrefix         = "/nonce"
 	UserPrefix          = "/user"
+	TraderPrefix        = "/trader"
 )
 
 func InitRouter(
@@ -59,6 +60,9 @@ func InitRouter(
 	e.PUT(UserPrefix+"/:wallet/nickname", СheckAuthSign(st), services.Routes.User.PutNicknameUpdate)
 	e.POST(UserPrefix+"/signup", СheckAuthSign(st), services.Routes.User.PostSignUp)
 	//
+
+	// Trader
+	e.GET(TraderPrefix+"/:traderWallet/info", services.Routes.Trader.GetTraderInfo)
 
 	// Static Public folder
 	path, _ := filepath.Abs("public")

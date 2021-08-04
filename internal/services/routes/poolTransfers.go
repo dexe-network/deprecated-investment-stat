@@ -30,10 +30,10 @@ func (p *PoolTransfersRoutes) GetWithdrawalsByWallet(c *gin.Context) {
 		return
 	}
 
+	wallet := c.Param("wallet")
 	var transfers []models.PoolTransfer
-
 	if err := p.Context.st.DB.Find(
-		&transfers, "type = ? AND LOWER(wallet) = LOWER(?)", "withdraw", c.Param("wallet"),
+		&transfers, "type = ? AND LOWER(wallet) = LOWER(?)", "withdraw", wallet,
 	).Error; err != nil {
 		response.Error(c, http.StatusBadRequest, response.E{
 			Code:    response.InvalidJSONBody,
@@ -64,10 +64,10 @@ func (p *PoolTransfersRoutes) GetDepositsByWallet(c *gin.Context) {
 		return
 	}
 
+	wallet := c.Param("wallet")
 	var transfers []models.PoolTransfer
-
 	if err := p.Context.st.DB.Find(
-		&transfers, "type = ? AND LOWER(wallet) = LOWER(?)", "deposit", c.Param("wallet"),
+		&transfers, "type = ? AND LOWER(wallet) = LOWER(?)", "deposit", wallet,
 	).Error; err != nil {
 		response.Error(c, http.StatusBadRequest, response.E{
 			Code:    response.InvalidJSONBody,

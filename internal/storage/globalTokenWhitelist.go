@@ -54,6 +54,6 @@ func (s *GlobalTokenWhitelistStorage) Save(item *models.GlobalTokenWhitelist) (e
 }
 
 func (s *GlobalTokenWhitelistStorage) Delete(address string) (err error) {
-	err = s.DB.Where("address = ?", address).Delete(&models.GlobalTokenWhitelist{}).Error
+	err = s.DB.Where("LOWER(address) = LOWER(?)", address).Delete(&models.GlobalTokenWhitelist{}).Error
 	return
 }

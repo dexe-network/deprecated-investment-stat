@@ -209,8 +209,10 @@ func (s *Subscriber) handleHeader(header types.Header) {
 }
 
 func (s *Subscriber) isTraderPoolTx(to *common.Address) (hexAddress string) {
+	address := to.String()
+
 	var pool models.Pool
-	if err := s.st.DB.First(&pool, "\"poolAdr\" = ?", to.String()).Error; err != nil {
+	if err := s.st.DB.First(&pool, "LOWER(\"poolAdr\") = LOWER(?)", address).Error; err != nil {
 		s.log.Debug("isTraderPoolTx Db Request Error", zap.Error(err))
 		return
 	}
