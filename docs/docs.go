@@ -321,9 +321,9 @@ var doc = `{
                 }
             }
         },
-        "/trader/{traderWallet}": {
+        "/trader/{poolAddress}/info": {
             "get": {
-                "description": "Get Trader Info",
+                "description": "Get Trader/Pool info",
                 "consumes": [
                     "application/json"
                 ],
@@ -333,12 +333,12 @@ var doc = `{
                 "tags": [
                     "Trader"
                 ],
-                "summary": "Get Trader Info",
+                "summary": "Get Trader/Pool info",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Trader wallet address",
-                        "name": "traderWallet",
+                        "description": "Pool address",
+                        "name": "poolAddress",
                         "in": "path",
                         "required": true
                     }
@@ -355,7 +355,7 @@ var doc = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/service_routes.TraderInfoResponse"
+                                            "$ref": "#/definitions/service_routes.PoolInfoResponse"
                                         }
                                     }
                                 }
@@ -866,7 +866,7 @@ var doc = `{
                 }
             }
         },
-        "service_routes.TraderInfoResponse": {
+        "service_routes.PoolInfoResponse": {
             "type": "object",
             "properties": {
                 "copiers": {

@@ -62,7 +62,7 @@ func InitRouter(
 	//
 
 	// Trader
-	e.GET(TraderPrefix+"/:traderWallet/info", services.Routes.Trader.GetTraderInfo)
+	e.GET(TraderPrefix+"/:poolAddress/info", services.Routes.Trader.GetPoolInfo)
 
 	// Static Public folder
 	path, _ := filepath.Abs("public")

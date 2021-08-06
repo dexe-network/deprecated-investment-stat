@@ -126,7 +126,7 @@ definitions:
       nonce:
         type: integer
     type: object
-  service_routes.TraderInfoResponse:
+  service_routes.PoolInfoResponse:
     properties:
       copiers:
         type: number
@@ -344,15 +344,15 @@ paths:
       summary: Get Pools By Creator Wallet
       tags:
       - Pools
-  /trader/{traderWallet}:
+  /trader/{poolAddress}/info:
     get:
       consumes:
       - application/json
-      description: Get Trader Info
+      description: Get Trader/Pool info
       parameters:
-      - description: Trader wallet address
+      - description: Pool address
         in: path
-        name: traderWallet
+        name: poolAddress
         required: true
         type: string
       produces:
@@ -365,13 +365,13 @@ paths:
             - $ref: '#/definitions/response.S'
             - properties:
                 data:
-                  $ref: '#/definitions/service_routes.TraderInfoResponse'
+                  $ref: '#/definitions/service_routes.PoolInfoResponse'
               type: object
         "400":
           description: Bad Request
           schema:
             $ref: '#/definitions/response.E'
-      summary: Get Trader Info
+      summary: Get Trader/Pool info
       tags:
       - Trader
   /trades/{traderPool}:
