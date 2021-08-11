@@ -34,6 +34,7 @@ type Repo struct {
 	Trade                Trade
 	PoolTransfer         PoolTransfer
 	GlobalTokenWhitelist GlobalTokenWhitelist
+	PoolIndicators       PoolIndicators
 }
 
 func NewRepo(st *Storage) Repo {
@@ -43,6 +44,7 @@ func NewRepo(st *Storage) Repo {
 		Trade:                NewTradeStorage(st),
 		PoolTransfer:         NewPoolTransfersStorage(st),
 		GlobalTokenWhitelist: NewGlobalTokenWhitelistStorage(st),
+		PoolIndicators:       NewPoolIndicatorsStorage(st),
 	}
 }
 
@@ -52,6 +54,10 @@ type EthTrade interface {
 
 type Pool interface {
 	Save(pool *models.Pool) (err error)
+}
+
+type PoolIndicators interface {
+	Save(pool *models.PoolIndicators) (err error)
 }
 
 type Trade interface {

@@ -128,10 +128,18 @@ definitions:
     type: object
   service_routes.PoolInfoResponse:
     properties:
+      basicTokenAdr:
+        type: string
       copiers:
+        type: number
+      currentPrice:
         type: number
       fund:
         type: integer
+      priceChange24H:
+        type: number
+      symbol:
+        type: string
     type: object
   service_routes.responseTrade:
     properties:

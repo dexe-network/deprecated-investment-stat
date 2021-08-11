@@ -869,11 +869,23 @@ var doc = `{
         "service_routes.PoolInfoResponse": {
             "type": "object",
             "properties": {
+                "basicTokenAdr": {
+                    "type": "string"
+                },
                 "copiers": {
+                    "type": "number"
+                },
+                "currentPrice": {
                     "type": "number"
                 },
                 "fund": {
                     "type": "integer"
+                },
+                "priceChange24H": {
+                    "type": "number"
+                },
+                "symbol": {
+                    "type": "string"
                 }
             }
         },

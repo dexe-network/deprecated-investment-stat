@@ -18,6 +18,7 @@ var InitTables_201608301400 = &gormigrate.Migration{
 			&models.PoolTransfer{},
 			&models.GlobalTokenWhitelist{},
 			&models.Nonce{},
+			&models.PoolIndicators{},
 			&models.User{})
 	},
 	Rollback: func(tx *gorm.DB) error {

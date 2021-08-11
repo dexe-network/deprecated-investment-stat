@@ -64,3 +64,5 @@ pgadmin: root
 swag init --parseDependency --parseInternal --parseDepth 2 -g ./cmd/app/main.go
 
 swag init --parseDependency --parseInternal --parseDepth 5 -g ./cmd/app/main.go
+
+abigen --abi=/Users/Burger/dexe/dexe-investing/pkg/abi/TraderPoolUpgradeable.json --pkg=token --out=TraderPoolUpgradeable.go
