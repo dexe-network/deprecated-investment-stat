@@ -8,6 +8,8 @@ type Pool struct {
 	Id                    uint      `json:"id" gorm:"primaryKey;column:id"`
 	CreatorAdr            string    `json:"creatorAdr"      gorm:"type:character varying(255);column:creatorAdr;not null"`
 	BasicTokenAdr         string    `json:"basicTokenAdr"   gorm:"type:character varying(255);column:basicTokenAdr;not null"`
+	BasicTokenDecimals    uint8     `json:"basicTokenDecimals"   gorm:"type:integer;column:basicTokenDecimals;not null"`
+	BasicTokenSymbol      string    `json:"basicTokenSymbol"   gorm:"type:character varying(255);column:basicTokenSymbol;not null"`
 	TotalSupply           string    `json:"totalSupply"  gorm:"type:numeric;column:totalSupply;not null"`
 	TraderCommissionNum   uint16    `json:"traderCommissionNum" gorm:"type:integer;column:traderCommissionNum;not null"`
 	TraderCommissionDen   uint16    `json:"traderCommissionDen" gorm:"type:integer;column:traderCommissionDen;not null"`
@@ -20,6 +22,7 @@ type Pool struct {
 	Name                  string    `json:"name"      gorm:"type:character varying(255);column:name;not null"`
 	Symbol                string    `json:"symbol"      gorm:"type:character varying(255);column:symbol;not null"`
 	PoolAdr               string    `json:"poolAdr"   gorm:"type:character varying(255);column:poolAdr;not null;uniqueIndex"`
+	Decimals              uint8     `json:"decimals"   gorm:"type:integer;column:decimals;not null"`
 	Date                  time.Time `json:"date"         gorm:"type:timestamp with time zone;column:date;not null"`
 	BlockNumber           int64     `json:"blockNumber"  gorm:"type:bigint;column:blockNumber;not null"`                    //blockNumber bigint,
 	Tx                    string    `json:"tx"           gorm:"type:character varying(255);column:tx;not null;uniqueIndex"` //tx character varying(255),

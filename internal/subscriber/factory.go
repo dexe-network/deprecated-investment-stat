@@ -1,6 +1,7 @@
 package subscriber
 
 import (
+	"dex-trades-parser/internal/contracts/erc20"
 	"dex-trades-parser/internal/contracts/traderPoolUpgradeable"
 	"dex-trades-parser/internal/models"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -18,9 +19,31 @@ func (s *Subscriber) factoryTransactionProcessing(tx types.Transaction, blockNum
 		return
 	}
 
+	// Get Basic Token Info
+	instanceErc20, err := erc20.NewErc20(parsedTransaction.BasicTokenAdr, s.client)
+	if err != nil {
+		s.log.Debug("Create instance of token error "+tx.Hash().String(), zap.Error(err))
+		return
+	}
+
+	basicTokenDecimals, err := instanceErc20.Decimals(&bind.CallOpts{})
+	if err != nil {
+		s.log.Debug("Decimals request error "+tx.Hash().String(), zap.Error(err))
+		return
+	}
+
+	basicTokenSymbol, err := instanceErc20.Symbol(&bind.CallOpts{})
+	if err != nil {
+		s.log.Debug("Decimals request error "+tx.Hash().String(), zap.Error(err))
+		return
+	}
+	//
+
 	err = s.st.Repo.Pool.Save(&models.Pool{
 		CreatorAdr:            parsedTransaction.CreatorAdr.String(),
 		BasicTokenAdr:         parsedTransaction.BasicTokenAdr.String(),
+		BasicTokenDecimals:    basicTokenDecimals,
+		BasicTokenSymbol:      basicTokenSymbol,
 		TotalSupply:           parsedTransaction.TotalSupply.String(),
 		TraderCommissionNum:   parsedTransaction.TraderCommissionNum,
 		TraderCommissionDen:   parsedTransaction.TraderCommissionDen,
@@ -33,6 +56,7 @@ func (s *Subscriber) factoryTransactionProcessing(tx types.Transaction, blockNum
 		Name:                  parsedTransaction.Name,
 		Symbol:                parsedTransaction.Symbol,
 		PoolAdr:               parsedTransaction.PoolAdr,
+		Decimals:              uint8(18),
 		Date:                  time.Unix(int64(blockTime), 0),
 		BlockNumber:           parsedTransaction.BlockNumber,
 		Tx:                    parsedTransaction.Tx,

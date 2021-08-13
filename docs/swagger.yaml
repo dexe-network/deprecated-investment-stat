@@ -23,6 +23,10 @@ definitions:
     properties:
       basicTokenAdr:
         type: string
+      basicTokenDecimals:
+        type: integer
+      basicTokenSymbol:
+        type: string
       blockNumber:
         description: blockNumber bigint,
         type: integer
@@ -32,6 +36,8 @@ definitions:
         type: string
       date:
         type: string
+      decimals:
+        type: integer
       dexeCommissionDen:
         type: integer
       dexeCommissionNum:
@@ -130,15 +136,23 @@ definitions:
     properties:
       basicTokenAdr:
         type: string
+      basicTokenDecimal:
+        type: integer
+      basicTokenSymbol:
+        type: string
       copiers:
         type: number
       currentPrice:
-        type: number
+        type: string
       fund:
         type: integer
       priceChange24H:
         type: number
+      profitAndLoss:
+        type: string
       symbol:
+        type: string
+      totalValueLocked:
         type: string
     type: object
   service_routes.responseTrade:

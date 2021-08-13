@@ -695,6 +695,12 @@
                 "basicTokenAdr": {
                     "type": "string"
                 },
+                "basicTokenDecimals": {
+                    "type": "integer"
+                },
+                "basicTokenSymbol": {
+                    "type": "string"
+                },
                 "blockNumber": {
                     "description": "blockNumber bigint,",
                     "type": "integer"
@@ -707,6 +713,9 @@
                 },
                 "date": {
                     "type": "string"
+                },
+                "decimals": {
+                    "type": "integer"
                 },
                 "dexeCommissionDen": {
                     "type": "integer"
@@ -856,11 +865,17 @@
                 "basicTokenAdr": {
                     "type": "string"
                 },
+                "basicTokenDecimal": {
+                    "type": "integer"
+                },
+                "basicTokenSymbol": {
+                    "type": "string"
+                },
                 "copiers": {
                     "type": "number"
                 },
                 "currentPrice": {
-                    "type": "number"
+                    "type": "string"
                 },
                 "fund": {
                     "type": "integer"
@@ -868,7 +883,13 @@
                 "priceChange24H": {
                     "type": "number"
                 },
+                "profitAndLoss": {
+                    "type": "string"
+                },
                 "symbol": {
+                    "type": "string"
+                },
+                "totalValueLocked": {
                     "type": "string"
                 }
             }
