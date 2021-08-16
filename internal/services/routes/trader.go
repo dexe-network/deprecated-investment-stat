@@ -25,7 +25,7 @@ type PoolInfoResponse struct {
 	CurrentPrice      string  `json:"currentPrice"`
 	PriceChange24H    float64 `json:"priceChange24H"`
 	TotalValueLocked  string  `json:"totalValueLocked"`
-	ProfitAndLoss     string  `json:"profitAndLoss"`
+	ProfitAndLoss     float64  `json:"profitAndLoss"`
 }
 
 // @Description Get Trader/Pool info
@@ -83,8 +83,15 @@ func (p *TraderRoutes) GetPoolInfo(c *gin.Context) {
 
 	if totalCap.LessThanOrEqual(decimal.NewFromInt(0)) || totalSupply.LessThanOrEqual(decimal.NewFromInt(0)) {
 		result.CurrentPrice = "0"
+		// need improve/investigate
+		result.ProfitAndLoss = float64(-100)
 	} else {
-		result.CurrentPrice = helpers.ToWei(totalCap.Div(totalSupply), int(foundPool.BasicTokenDecimals)).String()
+		currentPrice := totalCap.Div(totalSupply)
+		result.CurrentPrice = helpers.ToWei(currentPrice, int(foundPool.BasicTokenDecimals)).String()
+		// PL will be correct when start token price 1 token = 1 baseToken
+		result.ProfitAndLoss, _ = currentPrice.Mul(decimal.NewFromInt(100)).
+			Div(decimal.NewFromInt(1)).
+			Sub(decimal.NewFromInt(100)).Float64()
 	}
 
 	var indicatorsLast24h []models.PoolIndicators

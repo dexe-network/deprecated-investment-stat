@@ -900,7 +900,7 @@ var doc = `{
                     "type": "number"
                 },
                 "profitAndLoss": {
-                    "type": "string"
+                    "type": "number"
                 },
                 "symbol": {
                     "type": "string"
