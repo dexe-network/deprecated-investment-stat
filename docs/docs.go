@@ -896,6 +896,12 @@ var doc = `{
                 "fund": {
                     "type": "integer"
                 },
+                "investorsFundsLocked": {
+                    "type": "string"
+                },
+                "personalFundsLocked": {
+                    "type": "string"
+                },
                 "priceChange24H": {
                     "type": "number"
                 },

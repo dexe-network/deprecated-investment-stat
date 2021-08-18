@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"go.uber.org/zap"
 	"math/big"
@@ -66,6 +67,14 @@ func (s *Subscriber) traderPoolTransactionProcessing(tx types.Transaction, block
 		return
 	}
 
+	// Get Trader Wallet Address
+	var foundPool models.Pool
+	if err := s.st.DB.First(&foundPool, "LOWER(\"poolAdr\") = LOWER(?)", tx.To().String()).
+		Error; err != nil {
+		s.log.Debug("Find Pool error "+tx.Hash().String(), zap.Error(err))
+		return
+	}
+
 	///////// Store Pool Indicators for every operation
 	instance, err := traderPoolUpgradeable.NewToken(*tx.To(), s.client)
 	if err != nil {
@@ -79,13 +88,21 @@ func (s *Subscriber) traderPoolTransactionProcessing(tx types.Transaction, block
 		return
 	}
 
+	traderAmount, _, _, err := instance.GetUserData(
+		&bind.CallOpts{BlockNumber: big.NewInt(blockNumber)}, common.HexToAddress(foundPool.CreatorAdr))
+	if err != nil {
+		s.log.Debug("GetUserData request error "+tx.Hash().String(), zap.Error(err))
+		return
+	}
+
 	err = s.st.Repo.PoolIndicators.Save(&models.PoolIndicators{
-		PoolAdr:     tx.To().String(),
-		TotalCap:    totalCap.String(),
-		TotalSupply: totalSupply.String(),
-		Date:        time.Unix(int64(blockTime), 0),
-		BlockNumber: blockNumber,
-		Tx:          tx.Hash().String(),
+		PoolAdr:                    tx.To().String(),
+		TotalCap:                   totalCap.String(),
+		TotalSupply:                totalSupply.String(),
+		TraderBasicTokensDeposited: traderAmount.String(),
+		Date:                       time.Unix(int64(blockTime), 0),
+		BlockNumber:                blockNumber,
+		Tx:                         tx.Hash().String(),
 	})
 	if err != nil {
 		s.log.Error("Can't save PoolIndicators to DB", zap.Error(err))

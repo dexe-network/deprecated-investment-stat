@@ -5,6 +5,7 @@ import (
 	"dex-trades-parser/internal/models"
 	"dex-trades-parser/pkg/helpers"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/jackc/pgtype"
 	"go.uber.org/zap"
@@ -35,6 +36,14 @@ func (s *Subscriber) exchangeToolTransactionProcessing(tx types.Transaction, blo
 		s.log.Error("Can't save trade to DB", zap.Error(err))
 	}
 
+	// Get Trader Wallet Address
+	var foundPool models.Pool
+	if err := s.st.DB.First(&foundPool, "LOWER(\"poolAdr\") = LOWER(?)", parsedTransaction.TraderPool.String()).
+		Error; err != nil {
+		s.log.Debug("Find Pool error "+tx.Hash().String(), zap.Error(err))
+		return
+	}
+
 	///////// Store Pool Indicators for every operation
 	instance, err := traderPoolUpgradeable.NewToken(parsedTransaction.TraderPool, s.client)
 	if err != nil {
@@ -48,13 +57,21 @@ func (s *Subscriber) exchangeToolTransactionProcessing(tx types.Transaction, blo
 		return
 	}
 
+	traderAmount, _, _, err := instance.GetUserData(
+		&bind.CallOpts{BlockNumber: big.NewInt(parsedTransaction.BlockNumber)}, common.HexToAddress(foundPool.CreatorAdr))
+	if err != nil {
+		s.log.Debug("GetUserData request error "+tx.Hash().String(), zap.Error(err))
+		return
+	}
+
 	err = s.st.Repo.PoolIndicators.Save(&models.PoolIndicators{
-		PoolAdr:     parsedTransaction.TraderPool.String(),
-		TotalCap:    totalCap.String(),
-		TotalSupply: totalSupply.String(),
-		Date:        time.Unix(int64(blockTime), 0),
-		BlockNumber: parsedTransaction.BlockNumber,
-		Tx:          parsedTransaction.Tx,
+		PoolAdr:                    parsedTransaction.TraderPool.String(),
+		TotalCap:                   totalCap.String(),
+		TotalSupply:                totalSupply.String(),
+		TraderBasicTokensDeposited: traderAmount.String(),
+		Date:                       time.Unix(int64(blockTime), 0),
+		BlockNumber:                parsedTransaction.BlockNumber,
+		Tx:                         parsedTransaction.Tx,
 	})
 	if err != nil {
 		s.log.Error("Can't save PoolIndicators to DB", zap.Error(err))

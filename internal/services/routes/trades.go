@@ -67,7 +67,7 @@ func (p *TradesRoutes) GetTradesByPoolAdr(c *gin.Context) {
 			pool.TraderPool,
 			pool.AmountIn,
 			pool.AmountOutMin,
-			path,
+			path, // add type buy or sell, add base token address , add open or close token address, add hostorical prise base token/target token
 			pool.Deadline,
 			pool.Date,
 			pool.BlockNumber,

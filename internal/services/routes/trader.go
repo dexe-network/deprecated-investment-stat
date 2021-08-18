@@ -6,6 +6,7 @@ import (
 	"dex-trades-parser/pkg/response"
 	"github.com/gin-gonic/gin"
 	"github.com/shopspring/decimal"
+	"math/big"
 	"net/http"
 	"strconv"
 	"time"
@@ -16,16 +17,20 @@ type TraderRoutes struct {
 }
 
 type PoolInfoResponse struct {
-	Fund              int64   `json:"fund"`
-	Copiers           float64 `json:"copiers"`
-	Symbol            string  `json:"symbol"`
-	BasicTokenAdr     string  `json:"basicTokenAdr"`
-	BasicTokenDecimal uint8   `json:"basicTokenDecimal"`
-	BasicTokenSymbol  string  `json:"basicTokenSymbol"`
-	CurrentPrice      string  `json:"currentPrice"`
-	PriceChange24H    float64 `json:"priceChange24H"`
-	TotalValueLocked  string  `json:"totalValueLocked"`
-	ProfitAndLoss     float64  `json:"profitAndLoss"`
+	Fund                 int64   `json:"fund"`
+	Copiers              float64 `json:"copiers"`
+	Symbol               string  `json:"symbol"`
+	BasicTokenAdr        string  `json:"basicTokenAdr"`
+	BasicTokenDecimal    uint8   `json:"basicTokenDecimal"`
+	BasicTokenSymbol     string  `json:"basicTokenSymbol"`
+	CurrentPrice         string  `json:"currentPrice"`
+	PriceChange24H       float64 `json:"priceChange24H"`
+	TotalValueLocked     string  `json:"totalValueLocked"`
+	ProfitAndLoss        float64 `json:"profitAndLoss"`
+	PersonalFundsLocked  string  `json:"personalFundsLocked"`
+	InvestorsFundsLocked string  `json:"investorsFundsLocked"`
+	//PersonalFundsLocked24H  float64 `json:"personalFundsLocked24H"`
+	//InvestorsFundsLocked24H float64 `json:"investorsFundsLocked24H"`
 }
 
 // @Description Get Trader/Pool info
@@ -46,8 +51,6 @@ func (p *TraderRoutes) GetPoolInfo(c *gin.Context) {
 		return
 	}
 
-	result := &PoolInfoResponse{}
-
 	////// Pool Data
 	poolAddress := c.Param("poolAddress")
 	var foundPool models.Pool
@@ -59,10 +62,6 @@ func (p *TraderRoutes) GetPoolInfo(c *gin.Context) {
 		})
 		return
 	}
-	result.Symbol = foundPool.Symbol
-	result.BasicTokenAdr = foundPool.BasicTokenAdr
-	result.BasicTokenDecimal = foundPool.BasicTokenDecimals
-	result.BasicTokenSymbol = foundPool.BasicTokenSymbol
 	//////
 
 	////// Indicators Data
@@ -76,24 +75,14 @@ func (p *TraderRoutes) GetPoolInfo(c *gin.Context) {
 		})
 		return
 	}
-	result.TotalValueLocked = indicatorLast.TotalCap
 
-	totalCap := helpers.ToDecimal(indicatorLast.TotalCap, int(foundPool.BasicTokenDecimals))
-	totalSupply := helpers.ToDecimal(indicatorLast.TotalSupply, int(foundPool.Decimals))
+	investorsFundsLocked,
+		personalFundsLocked,
+		totalValueLocked,
+		currentPrice,
+		profitAndLoss := getPoolInfoIndicatorData(&indicatorLast, &foundPool)
 
-	if totalCap.LessThanOrEqual(decimal.NewFromInt(0)) || totalSupply.LessThanOrEqual(decimal.NewFromInt(0)) {
-		result.CurrentPrice = "0"
-		// need improve/investigate
-		result.ProfitAndLoss = float64(-100)
-	} else {
-		currentPrice := totalCap.Div(totalSupply)
-		result.CurrentPrice = helpers.ToWei(currentPrice, int(foundPool.BasicTokenDecimals)).String()
-		// PL will be correct when start token price 1 token = 1 baseToken
-		result.ProfitAndLoss, _ = currentPrice.Mul(decimal.NewFromInt(100)).
-			Div(decimal.NewFromInt(1)).
-			Sub(decimal.NewFromInt(100)).Float64()
-	}
-
+	////// Indicators Last 24 Data
 	var indicatorsLast24h []models.PoolIndicators
 	if err := p.Context.st.DB.Order("date asc").Find(&indicatorsLast24h,
 		"\"poolAdr\" = ? AND \"date\" >= ?", foundPool.PoolAdr, time.Now().AddDate(0, 0, -1)).
@@ -104,34 +93,7 @@ func (p *TraderRoutes) GetPoolInfo(c *gin.Context) {
 		})
 		return
 	}
-
-	if len(indicatorsLast24h) == 0 {
-		result.PriceChange24H = 0
-	} else {
-		totalCap24h, err := strconv.ParseFloat(indicatorsLast24h[0].TotalCap, 64)
-		totalSupply24h, err := strconv.ParseFloat(indicatorsLast24h[0].TotalSupply, 64)
-		if err != nil {
-			response.Error(c, http.StatusBadRequest, response.E{
-				Code:    response.InvalidRequest,
-				Message: "ParseFloat request error",
-			})
-			return
-		}
-		if totalCap24h <= 0 || totalSupply24h <= 0 || result.CurrentPrice == "0" {
-			result.PriceChange24H = 0
-		} else {
-			currentPrice, err := strconv.ParseFloat(result.CurrentPrice, 64)
-			if err != nil {
-				response.Error(c, http.StatusBadRequest, response.E{
-					Code:    response.InvalidRequest,
-					Message: "ParseFloat request error",
-				})
-				return
-			}
-			last24HPrice := totalCap24h / totalSupply24h
-			result.PriceChange24H = last24HPrice / currentPrice * 100
-		}
-	}
+	priceChange24H := getPoolInfoIndicatorLast24Data(indicatorsLast24h, currentPrice, c)
 	/////
 
 	///// Pool Transfers Data
@@ -145,7 +107,7 @@ func (p *TraderRoutes) GetPoolInfo(c *gin.Context) {
 		})
 		return
 	}
-	result.Fund = investorsCount
+	fund := investorsCount
 
 	var investorsLast24hCount int64
 	if err := p.Context.st.DB.Model(&models.PoolTransfer{}).Distinct("\"wallet\"").
@@ -157,12 +119,94 @@ func (p *TraderRoutes) GetPoolInfo(c *gin.Context) {
 		})
 		return
 	}
-	if investorsCount == 0 || investorsLast24hCount == 0 {
-		result.Copiers = 0
-	} else {
-		result.Copiers = float64(investorsLast24hCount) / float64(investorsCount) * 100
+	copiers := getPoolInfoInvestorsLast24hCount(investorsCount, investorsLast24hCount)
+
+	result := &PoolInfoResponse{
+		Fund:                 fund,
+		Copiers:              copiers,
+		Symbol:               foundPool.Symbol,
+		BasicTokenAdr:        foundPool.BasicTokenAdr,
+		BasicTokenDecimal:    foundPool.BasicTokenDecimals,
+		BasicTokenSymbol:     foundPool.BasicTokenSymbol,
+		CurrentPrice:         currentPrice,
+		PriceChange24H:       priceChange24H,
+		TotalValueLocked:     totalValueLocked,
+		ProfitAndLoss:        profitAndLoss,
+		PersonalFundsLocked:  personalFundsLocked,
+		InvestorsFundsLocked: investorsFundsLocked,
 	}
 
 	response.Success(c, http.StatusOK, response.S{Data: result})
 
+}
+
+func getPoolInfoInvestorsLast24hCount(investorsCount int64, investorsLast24hCount int64) (copiers float64) {
+	if investorsCount == 0 || investorsLast24hCount == 0 {
+		copiers = 0
+	} else {
+		copiers = float64(investorsLast24hCount) / float64(investorsCount) * 100
+	}
+	return
+}
+
+func getPoolInfoIndicatorLast24Data(indicatorsLast24h []models.PoolIndicators, currentPrice string, c *gin.Context) (priceChange24H float64) {
+	if len(indicatorsLast24h) == 0 {
+		priceChange24H = 0
+	} else {
+		totalCap24h, err := strconv.ParseFloat(indicatorsLast24h[0].TotalCap, 64)
+		totalSupply24h, err := strconv.ParseFloat(indicatorsLast24h[0].TotalSupply, 64)
+		if err != nil {
+			response.Error(c, http.StatusBadRequest, response.E{
+				Code:    response.InvalidRequest,
+				Message: "ParseFloat request error",
+			})
+			return
+		}
+		if totalCap24h <= 0 || totalSupply24h <= 0 || currentPrice == "0" {
+			priceChange24H = 0
+		} else {
+			currentPrice, err := strconv.ParseFloat(currentPrice, 64)
+			if err != nil {
+				response.Error(c, http.StatusBadRequest, response.E{
+					Code:    response.InvalidRequest,
+					Message: "ParseFloat request error",
+				})
+				return
+			}
+			last24HPrice := totalCap24h / totalSupply24h
+			priceChange24H = last24HPrice / currentPrice * 100
+		}
+	}
+	return
+}
+
+func getPoolInfoIndicatorData(indicatorLast *models.PoolIndicators, foundPool *models.Pool) (
+	investorsFundsLocked string, personalFundsLocked string, totalValueLocked string, currentPrice string, profitAndLoss float64) {
+	// Parse String to Int
+	totalCapInt := new(big.Int)
+	totalCapInt.SetString(indicatorLast.TotalCap, 10)
+	traderBasicTokensDeposited := new(big.Int)
+	traderBasicTokensDeposited.SetString(indicatorLast.TraderBasicTokensDeposited, 10)
+	//
+
+	investorsFundsLocked = big.NewInt(0).Sub(totalCapInt, traderBasicTokensDeposited).String() // wrong value diff decimal this not base token
+	personalFundsLocked = traderBasicTokensDeposited.String()
+	totalValueLocked = indicatorLast.TotalCap
+
+	totalCap := helpers.ToDecimal(indicatorLast.TotalCap, int(foundPool.BasicTokenDecimals))
+	totalSupply := helpers.ToDecimal(indicatorLast.TotalSupply, int(foundPool.Decimals))
+
+	if totalCap.LessThanOrEqual(decimal.NewFromInt(0)) || totalSupply.LessThanOrEqual(decimal.NewFromInt(0)) {
+		currentPrice = "0"
+		// need improve/investigate
+		profitAndLoss = float64(-100)
+	} else {
+		currentPriceRaw := totalCap.Div(totalSupply)
+		currentPrice = helpers.ToWei(currentPriceRaw, int(foundPool.BasicTokenDecimals)).String()
+		// PL will be correct when start token price 1 token = 1 baseToken
+		profitAndLoss, _ = currentPriceRaw.Mul(decimal.NewFromInt(100)).
+			Div(decimal.NewFromInt(1)).
+			Sub(decimal.NewFromInt(100)).Float64()
+	}
+	return
 }

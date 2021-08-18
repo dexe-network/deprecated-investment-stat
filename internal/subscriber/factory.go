@@ -78,13 +78,21 @@ func (s *Subscriber) factoryTransactionProcessing(tx types.Transaction, blockNum
 		return
 	}
 
+	traderAmount, _, _, err := instance.GetUserData(
+		&bind.CallOpts{BlockNumber: big.NewInt(parsedTransaction.BlockNumber)}, parsedTransaction.CreatorAdr)
+	if err != nil {
+		s.log.Debug("GetUserData request error "+tx.Hash().String(), zap.Error(err))
+		return
+	}
+
 	err = s.st.Repo.PoolIndicators.Save(&models.PoolIndicators{
-		PoolAdr:     parsedTransaction.PoolAdr,
-		TotalCap:    totalCap.String(),
-		TotalSupply: totalSupply.String(),
-		Date:        time.Unix(int64(blockTime), 0),
-		BlockNumber: parsedTransaction.BlockNumber,
-		Tx:          parsedTransaction.Tx,
+		PoolAdr:                    parsedTransaction.PoolAdr,
+		TotalCap:                   totalCap.String(),
+		TotalSupply:                totalSupply.String(),
+		TraderBasicTokensDeposited: traderAmount.String(),
+		Date:                       time.Unix(int64(blockTime), 0),
+		BlockNumber:                parsedTransaction.BlockNumber,
+		Tx:                         parsedTransaction.Tx,
 	})
 	if err != nil {
 		s.log.Error("Can't save PoolIndicators to DB", zap.Error(err))
