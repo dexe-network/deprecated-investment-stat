@@ -5,6 +5,7 @@ import (
 	"dex-trades-parser/pkg/helpers"
 	"dex-trades-parser/pkg/response"
 	"github.com/gin-gonic/gin"
+	"github.com/nleeper/goment"
 	"github.com/shopspring/decimal"
 	"math/big"
 	"net/http"
@@ -16,21 +17,34 @@ type TraderRoutes struct {
 	Context *RoutesContext
 }
 
+type PoolInfoChartData struct {
+	X time.Time  `json:"x"`
+	Y float64 `json:"y"`
+}
+
+type PoolInfoProfitLossByPeriod struct {
+	M1  float64 `json:"m1"`
+	M3  float64 `json:"m3"`
+	All float64 `json:"all"`
+}
+
 type PoolInfoResponse struct {
-	Fund                    int64   `json:"fund"`
-	Copiers                 float64 `json:"copiers"`
-	Symbol                  string  `json:"symbol"`
-	BasicTokenAdr           string  `json:"basicTokenAdr"`
-	BasicTokenDecimal       uint8   `json:"basicTokenDecimal"`
-	BasicTokenSymbol        string  `json:"basicTokenSymbol"`
-	CurrentPrice            string  `json:"currentPrice"`
-	PriceChange24H          float64 `json:"priceChange24H"`
-	TotalValueLocked        string  `json:"totalValueLocked"`
-	ProfitAndLoss           float64 `json:"profitAndLoss"`
-	PersonalFundsLocked     string  `json:"personalFundsLocked"`
-	InvestorsFundsLocked    string  `json:"investorsFundsLocked"`
-	PersonalFundsLocked24H  float64 `json:"personalFundsLocked24H"`
-	InvestorsFundsLocked24H float64 `json:"investorsFundsLocked24H"`
+	Fund                    int64                      `json:"fund"`
+	Copiers24H              float64                    `json:"copiers24H"`
+	Symbol                  string                     `json:"symbol"`
+	BasicTokenAdr           string                     `json:"basicTokenAdr"`
+	BasicTokenDecimal       uint8                      `json:"basicTokenDecimal"`
+	BasicTokenSymbol        string                     `json:"basicTokenSymbol"`
+	CurrentPrice            string                     `json:"currentPrice"`
+	PriceChange24H          float64                    `json:"priceChange24H"`
+	TotalValueLocked        string                     `json:"totalValueLocked"`
+	ProfitAndLoss           float64                    `json:"profitAndLoss"`
+	PersonalFundsLocked     string                     `json:"personalFundsLocked"`
+	InvestorsFundsLocked    string                     `json:"investorsFundsLocked"`
+	PersonalFundsLocked24H  float64                    `json:"personalFundsLocked24H"`
+	InvestorsFundsLocked24H float64                    `json:"investorsFundsLocked24H"`
+	ProfitAndLossByPeriod   PoolInfoProfitLossByPeriod `json:"profitAndLossByPeriod"`
+	ProfitAndLossChart      []PoolInfoChartData        `json:"profitAndLossChart"`
 }
 
 // @Description Get Trader/Pool info
@@ -85,10 +99,10 @@ func (p *TraderRoutes) GetPoolInfo(c *gin.Context) {
 	}
 
 	investorsFundsLocked,
-		personalFundsLocked,
-		totalValueLocked,
-		currentPrice,
-		profitAndLoss := getPoolInfoIndicatorData(&indicatorLast, &foundPool)
+	personalFundsLocked,
+	totalValueLocked,
+	currentPrice,
+	profitAndLoss := getPoolInfoIndicatorData(&indicatorLast, &foundPool)
 
 	////// Indicators Last 24 Data
 	var indicatorsLast24h []models.PoolIndicators
@@ -147,9 +161,26 @@ func (p *TraderRoutes) GetPoolInfo(c *gin.Context) {
 	}
 	copiers := getPoolInfoInvestorsLast24hCount(investorsCount, investorsLast24hCount)
 
+	var indicatorsAll []models.PoolIndicators
+	if err := p.Context.st.DB.Order("date asc").Find(
+		&indicatorsAll,
+		"\"poolAdr\" = ?", foundPool.PoolAdr,
+	).
+		Error; err != nil {
+		response.Error(
+			c, http.StatusBadRequest, response.E{
+				Code:    response.InvalidRequest,
+				Message: "Indicators DB request error",
+			},
+		)
+		return
+	}
+	profitAndLossByPeriod := getProfitAndLossByPeriod(indicatorsAll, &foundPool)
+	profitAndLossChart := getProfitAndLossChart(indicatorsAll)
+
 	result := &PoolInfoResponse{
 		Fund:                    fund,
-		Copiers:                 copiers,
+		Copiers24H:              copiers,
 		Symbol:                  foundPool.Symbol,
 		BasicTokenAdr:           foundPool.BasicTokenAdr,
 		BasicTokenDecimal:       foundPool.BasicTokenDecimals,
@@ -162,10 +193,98 @@ func (p *TraderRoutes) GetPoolInfo(c *gin.Context) {
 		InvestorsFundsLocked:    investorsFundsLocked,
 		PersonalFundsLocked24H:  personalFundsLocked24H,
 		InvestorsFundsLocked24H: investorsFundsLocked24H,
+		ProfitAndLossByPeriod:   profitAndLossByPeriod,
+		ProfitAndLossChart:      profitAndLossChart,
 	}
 
 	response.Success(c, http.StatusOK, response.S{Data: result})
 
+}
+
+func getProfitAndLossChart(indicatorsAll []models.PoolIndicators) (poolInfoChartData []PoolInfoChartData) {
+	if len(indicatorsAll) == 0 {
+		return
+	}
+
+	for _, indicators := range indicatorsAll {
+		price, _ := decimal.NewFromString(indicators.PoolTokenPrice)
+		if price.GreaterThan(decimal.NewFromInt(0)) {
+			profitAndLoss, _ := price.Mul(decimal.NewFromInt(100)).
+				Div(decimal.NewFromInt(1)).
+				Sub(decimal.NewFromInt(100)).Float64()
+			poolInfoChartData = append(
+				poolInfoChartData,
+				PoolInfoChartData{X: indicators.Date.UTC(), Y: profitAndLoss},
+			)
+		}
+	}
+	return
+}
+
+func getProfitAndLossByPeriod(
+	indicatorsAll []models.PoolIndicators,
+	foundPool *models.Pool,
+) (profitAndLossByPeriod PoolInfoProfitLossByPeriod) {
+	if len(indicatorsAll) == 0 {
+		return
+	}
+
+	currentTime, _ := goment.New()
+	m1Time := currentTime.Subtract(1, "month").ToUnix()
+	m3Time := currentTime.Subtract(3, "month").ToUnix()
+
+	var m1 []models.PoolIndicators
+	var m3 []models.PoolIndicators
+
+	for _, indicator := range indicatorsAll {
+		indicatorDate := indicator.Date.Unix()
+		if indicatorDate > m1Time {
+			m1 = append(m1, indicator)
+			continue
+		}
+
+		if indicatorDate > m3Time {
+			m3 = append(m3, indicator)
+			continue
+		}
+	}
+
+	// Latest
+	latestIndicator := indicatorsAll[len(indicatorsAll)-1]
+	latestTotalCap := helpers.ToDecimal(latestIndicator.TotalCap, int(foundPool.BasicTokenDecimals))
+	latestTotalSupply := helpers.ToDecimal(latestIndicator.TotalSupply, int(foundPool.Decimals))
+	latestPrice := latestTotalCap.Div(latestTotalSupply)
+	profitAndLossByPeriod.All, _ = latestPrice.Mul(decimal.NewFromInt(100)).
+		Div(decimal.NewFromInt(1)).
+		Sub(decimal.NewFromInt(100)).Float64()
+
+	// m1
+	if len(m1) > 0 {
+		m1Indicator := m1[0]
+		m1totalCap := helpers.ToDecimal(m1Indicator.TotalCap, int(foundPool.BasicTokenDecimals))
+		m1totalSupply := helpers.ToDecimal(m1Indicator.TotalSupply, int(foundPool.Decimals))
+		m1Price := m1totalCap.Div(m1totalSupply)
+		profitAndLossByPeriod.M1, _ = latestPrice.Mul(decimal.NewFromInt(100)).
+			Div(m1Price).
+			Sub(decimal.NewFromInt(100)).Float64()
+	} else {
+		profitAndLossByPeriod.M1 = 0
+	}
+
+	// m3
+	if len(m3) > 0 {
+		m3Indicator := m3[0]
+		m3totalCap := helpers.ToDecimal(m3Indicator.TotalCap, int(foundPool.BasicTokenDecimals))
+		m3totalSupply := helpers.ToDecimal(m3Indicator.TotalSupply, int(foundPool.Decimals))
+		m3Price := m3totalCap.Div(m3totalSupply)
+		profitAndLossByPeriod.M3, _ = latestPrice.Mul(decimal.NewFromInt(100)).
+			Div(m3Price).
+			Sub(decimal.NewFromInt(100)).Float64()
+	} else {
+		profitAndLossByPeriod.M3 = 0
+	}
+
+	return
 }
 
 func getPoolInfoInvestorsLast24hCount(investorsCount int64, investorsLast24hCount int64) (copiers float64) {

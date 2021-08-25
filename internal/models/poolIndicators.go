@@ -8,6 +8,7 @@ type PoolIndicators struct {
 	TotalCap                   string    `json:"totalCap"  gorm:"type:numeric;column:totalCap;not null"`
 	TotalSupply                string    `json:"totalSupply"  gorm:"type:numeric;column:totalSupply;not null"`
 	TraderBasicTokensDeposited string    `json:"traderBasicTokensDeposited"  gorm:"type:numeric;column:traderBasicTokensDeposited;not null"`
+	PoolTokenPrice             string    `json:"poolTokenPrice"  gorm:"type:numeric;column:poolTokenPrice;not null"`
 	Date                       time.Time `json:"date"         gorm:"type:timestamp with time zone;column:date;not null"`
 	BlockNumber                int64     `json:"blockNumber"  gorm:"type:bigint;column:blockNumber;not null"`                    //blockNumber bigint,
 	Tx                         string    `json:"tx"           gorm:"type:character varying(255);column:tx;not null;uniqueIndex"` //tx character varying(255),

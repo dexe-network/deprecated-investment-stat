@@ -3,11 +3,13 @@ package subscriber
 import (
 	"dex-trades-parser/internal/contracts/traderPoolUpgradeable"
 	"dex-trades-parser/internal/models"
+	"dex-trades-parser/pkg/helpers"
 	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 	"math/big"
 	"time"
@@ -87,6 +89,12 @@ func (s *Subscriber) traderPoolTransactionProcessing(tx types.Transaction, block
 		s.log.Debug("GetTotalValueLocked request error "+tx.Hash().String(), zap.Error(err))
 		return
 	}
+	poolTokenPrice := decimal.NewFromInt(0)
+	if totalCap.Cmp(big.NewInt(0)) > 0 && totalSupply.Cmp(big.NewInt(0)) > 0 {
+		totalCapDecimal := helpers.ToDecimal(totalCap, int(foundPool.BasicTokenDecimals))
+		totalSupplyDecimal := helpers.ToDecimal(totalSupply, int(foundPool.Decimals))
+		poolTokenPrice = totalCapDecimal.Div(totalSupplyDecimal)
+	}
 
 	traderAmount, _, _, err := instance.GetUserData(
 		&bind.CallOpts{BlockNumber: big.NewInt(blockNumber)}, common.HexToAddress(foundPool.CreatorAdr))
@@ -100,6 +108,7 @@ func (s *Subscriber) traderPoolTransactionProcessing(tx types.Transaction, block
 		TotalCap:                   totalCap.String(),
 		TotalSupply:                totalSupply.String(),
 		TraderBasicTokensDeposited: traderAmount.String(),
+		PoolTokenPrice:             poolTokenPrice.String(),
 		Date:                       time.Unix(int64(blockTime), 0),
 		BlockNumber:                blockNumber,
 		Tx:                         tx.Hash().String(),

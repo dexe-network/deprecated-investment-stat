@@ -875,6 +875,31 @@ var doc = `{
                 }
             }
         },
+        "service_routes.PoolInfoChartData": {
+            "type": "object",
+            "properties": {
+                "x": {
+                    "type": "string"
+                },
+                "y": {
+                    "type": "number"
+                }
+            }
+        },
+        "service_routes.PoolInfoProfitLossByPeriod": {
+            "type": "object",
+            "properties": {
+                "all": {
+                    "type": "number"
+                },
+                "m1": {
+                    "type": "number"
+                },
+                "m3": {
+                    "type": "number"
+                }
+            }
+        },
         "service_routes.PoolInfoResponse": {
             "type": "object",
             "properties": {
@@ -887,7 +912,7 @@ var doc = `{
                 "basicTokenSymbol": {
                     "type": "string"
                 },
-                "copiers": {
+                "copiers24H": {
                     "type": "number"
                 },
                 "currentPrice": {
@@ -913,6 +938,15 @@ var doc = `{
                 },
                 "profitAndLoss": {
                     "type": "number"
+                },
+                "profitAndLossByPeriod": {
+                    "$ref": "#/definitions/service_routes.PoolInfoProfitLossByPeriod"
+                },
+                "profitAndLossChart": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/service_routes.PoolInfoChartData"
+                    }
                 },
                 "symbol": {
                     "type": "string"

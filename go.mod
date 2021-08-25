@@ -25,6 +25,7 @@ require (
 	github.com/lib/pq v1.10.2 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-isatty v0.0.13 // indirect
+	github.com/nleeper/goment v1.4.2
 	github.com/shopspring/decimal v0.0.0-20200227202807-02e2044944cc
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.1

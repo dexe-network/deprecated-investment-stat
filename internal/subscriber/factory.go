@@ -4,9 +4,11 @@ import (
 	"dex-trades-parser/internal/contracts/erc20"
 	"dex-trades-parser/internal/contracts/traderPoolUpgradeable"
 	"dex-trades-parser/internal/models"
+	"dex-trades-parser/pkg/helpers"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 	"math/big"
 	"time"
@@ -56,7 +58,7 @@ func (s *Subscriber) factoryTransactionProcessing(tx types.Transaction, blockNum
 		Name:                  parsedTransaction.Name,
 		Symbol:                parsedTransaction.Symbol,
 		PoolAdr:               parsedTransaction.PoolAdr,
-		Decimals:              uint8(18),
+		Decimals:              uint8(18), // Fixed Decimal, need improve after upgrade smart contracts
 		Date:                  time.Unix(int64(blockTime), 0),
 		BlockNumber:           parsedTransaction.BlockNumber,
 		Tx:                    parsedTransaction.Tx,
@@ -77,6 +79,12 @@ func (s *Subscriber) factoryTransactionProcessing(tx types.Transaction, blockNum
 		s.log.Debug("GetTotalValueLocked request error "+tx.Hash().String(), zap.Error(err))
 		return
 	}
+	poolTokenPrice := decimal.NewFromInt(0)
+	if totalCap.Cmp(big.NewInt(0)) > 0 && totalSupply.Cmp(big.NewInt(0)) > 0 {
+		totalCapDecimal := helpers.ToDecimal(totalCap, int(basicTokenDecimals))
+		totalSupplyDecimal := helpers.ToDecimal(totalSupply, int(uint8(18)))
+		poolTokenPrice = totalCapDecimal.Div(totalSupplyDecimal)
+	}
 
 	traderAmount, _, _, err := instance.GetUserData(
 		&bind.CallOpts{BlockNumber: big.NewInt(parsedTransaction.BlockNumber)}, parsedTransaction.CreatorAdr)
@@ -90,6 +98,7 @@ func (s *Subscriber) factoryTransactionProcessing(tx types.Transaction, blockNum
 		TotalCap:                   totalCap.String(),
 		TotalSupply:                totalSupply.String(),
 		TraderBasicTokensDeposited: traderAmount.String(),
+		PoolTokenPrice:             poolTokenPrice.String(),
 		Date:                       time.Unix(int64(blockTime), 0),
 		BlockNumber:                parsedTransaction.BlockNumber,
 		Tx:                         parsedTransaction.Tx,

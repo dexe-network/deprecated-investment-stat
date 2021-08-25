@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/jackc/pgtype"
+	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 	"math/big"
 	"time"
@@ -22,16 +23,18 @@ func (s *Subscriber) exchangeToolTransactionProcessing(tx types.Transaction, blo
 	parsedPaths := &pgtype.TextArray{}
 	parsedPaths.Set(helpers.AddressArrToStringArr(parsedTransaction.Path))
 
-	err = s.st.Repo.Trade.Save(&models.Trade{
-		TraderPool:   parsedTransaction.TraderPool.String(),
-		AmountIn:     parsedTransaction.AmountIn.String(),
-		AmountOutMin: parsedTransaction.AmountOutMin.String(),
-		Path:         *parsedPaths,
-		Deadline:     parsedTransaction.Deadline.String(),
-		Date:         time.Unix(int64(blockTime), 0),
-		BlockNumber:  parsedTransaction.BlockNumber,
-		Tx:           parsedTransaction.Tx,
-	})
+	err = s.st.Repo.Trade.Save(
+		&models.Trade{
+			TraderPool:   parsedTransaction.TraderPool.String(),
+			AmountIn:     parsedTransaction.AmountIn.String(),
+			AmountOutMin: parsedTransaction.AmountOutMin.String(),
+			Path:         *parsedPaths,
+			Deadline:     parsedTransaction.Deadline.String(),
+			Date:         time.Unix(int64(blockTime), 0),
+			BlockNumber:  parsedTransaction.BlockNumber,
+			Tx:           parsedTransaction.Tx,
+		},
+	)
 	if err != nil {
 		s.log.Error("Can't save trade to DB", zap.Error(err))
 	}
@@ -56,23 +59,34 @@ func (s *Subscriber) exchangeToolTransactionProcessing(tx types.Transaction, blo
 		s.log.Debug("GetTotalValueLocked request error "+tx.Hash().String(), zap.Error(err))
 		return
 	}
+	poolTokenPrice := decimal.NewFromInt(0)
+	if totalCap.Cmp(big.NewInt(0)) > 0 && totalSupply.Cmp(big.NewInt(0)) > 0 {
+		totalCapDecimal := helpers.ToDecimal(totalCap, int(foundPool.BasicTokenDecimals))
+		totalSupplyDecimal := helpers.ToDecimal(totalSupply, int(foundPool.Decimals))
+		poolTokenPrice = totalCapDecimal.Div(totalSupplyDecimal)
+	}
 
 	traderAmount, _, _, err := instance.GetUserData(
-		&bind.CallOpts{BlockNumber: big.NewInt(parsedTransaction.BlockNumber)}, common.HexToAddress(foundPool.CreatorAdr))
+		&bind.CallOpts{BlockNumber: big.NewInt(parsedTransaction.BlockNumber)},
+		common.HexToAddress(foundPool.CreatorAdr),
+	)
 	if err != nil {
 		s.log.Debug("GetUserData request error "+tx.Hash().String(), zap.Error(err))
 		return
 	}
 
-	err = s.st.Repo.PoolIndicators.Save(&models.PoolIndicators{
-		PoolAdr:                    parsedTransaction.TraderPool.String(),
-		TotalCap:                   totalCap.String(),
-		TotalSupply:                totalSupply.String(),
-		TraderBasicTokensDeposited: traderAmount.String(),
-		Date:                       time.Unix(int64(blockTime), 0),
-		BlockNumber:                parsedTransaction.BlockNumber,
-		Tx:                         parsedTransaction.Tx,
-	})
+	err = s.st.Repo.PoolIndicators.Save(
+		&models.PoolIndicators{
+			PoolAdr:                    parsedTransaction.TraderPool.String(),
+			TotalCap:                   totalCap.String(),
+			TotalSupply:                totalSupply.String(),
+			TraderBasicTokensDeposited: traderAmount.String(),
+			PoolTokenPrice:             poolTokenPrice.String(),
+			Date:                       time.Unix(int64(blockTime), 0),
+			BlockNumber:                parsedTransaction.BlockNumber,
+			Tx:                         parsedTransaction.Tx,
+		},
+	)
 	if err != nil {
 		s.log.Error("Can't save PoolIndicators to DB", zap.Error(err))
 	}
