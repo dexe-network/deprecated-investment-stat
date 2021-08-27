@@ -18,8 +18,8 @@ type TraderRoutes struct {
 }
 
 type PoolInfoChartData struct {
-	X time.Time  `json:"x"`
-	Y float64 `json:"y"`
+	X time.Time `json:"x"`
+	Y float64   `json:"y"`
 }
 
 type PoolInfoProfitLossByPeriod struct {
@@ -43,6 +43,7 @@ type PoolInfoResponse struct {
 	InvestorsFundsLocked    string                     `json:"investorsFundsLocked"`
 	PersonalFundsLocked24H  float64                    `json:"personalFundsLocked24H"`
 	InvestorsFundsLocked24H float64                    `json:"investorsFundsLocked24H"`
+	AnnualPercentageYield   float64                    `json:"annualPercentageYield"`
 	ProfitAndLossByPeriod   PoolInfoProfitLossByPeriod `json:"profitAndLossByPeriod"`
 	ProfitAndLossChart      []PoolInfoChartData        `json:"profitAndLossChart"`
 }
@@ -177,6 +178,25 @@ func (p *TraderRoutes) GetPoolInfo(c *gin.Context) {
 	}
 	profitAndLossByPeriod := getProfitAndLossByPeriod(indicatorsAll, &foundPool)
 	profitAndLossChart := getProfitAndLossChart(indicatorsAll)
+	////
+
+	///// Trades Data
+	var poolTradesDataForApy []models.Trade
+	if err := p.Context.st.DB.Find(
+		&poolTradesDataForApy,
+		"LOWER(\"traderPool\") = LOWER(?) AND type = ? AND date >= ?",
+		poolAddress, "sell", time.Now().AddDate(-1, 0, 0),
+	).
+		Error; err != nil {
+		response.Error(
+			c, http.StatusBadRequest, response.E{
+				Code:    response.InvalidRequest,
+				Message: "Trades Request Error",
+			},
+		)
+		return
+	}
+	annualPercentageYield := getAnnualPercentageYield(poolTradesDataForApy, indicatorsAll)
 
 	result := &PoolInfoResponse{
 		Fund:                    fund,
@@ -193,12 +213,53 @@ func (p *TraderRoutes) GetPoolInfo(c *gin.Context) {
 		InvestorsFundsLocked:    investorsFundsLocked,
 		PersonalFundsLocked24H:  personalFundsLocked24H,
 		InvestorsFundsLocked24H: investorsFundsLocked24H,
+		AnnualPercentageYield:   annualPercentageYield,
 		ProfitAndLossByPeriod:   profitAndLossByPeriod,
 		ProfitAndLossChart:      profitAndLossChart,
 	}
 
 	response.Success(c, http.StatusOK, response.S{Data: result})
 
+}
+
+func getAnnualPercentageYield(
+	poolTradesDataForApy []models.Trade,
+	indicatorsAll []models.PoolIndicators,
+) (annualPercentageYield float64) {
+	if len(poolTradesDataForApy) == 0 || len(indicatorsAll) == 0 {
+		return
+	}
+	currentTime, _ := goment.New()
+	m12Time := currentTime.Subtract(12, "month").ToUnix()
+	var m12 []models.PoolIndicators
+
+	for _, indicator := range indicatorsAll {
+		indicatorDate := indicator.Date.Unix()
+		if indicatorDate > m12Time {
+			m12 = append(m12, indicator)
+			continue
+		}
+	}
+
+	if len(m12) == 0 {
+		return
+	}
+	oldestPrice, _ := decimal.NewFromString(m12[0].PoolTokenPrice)
+	latestPrice, _ := decimal.NewFromString(m12[len(m12)-1].PoolTokenPrice)
+	if oldestPrice.LessThanOrEqual(decimal.NewFromInt(0)) {
+		oldestPrice = decimal.NewFromInt(1)
+	}
+	if latestPrice.LessThanOrEqual(decimal.NewFromInt(0)) {
+		latestPrice = decimal.NewFromInt(1)
+	}
+
+	totalSellPoolTrades1Year := decimal.NewFromInt(int64(len(poolTradesDataForApy)))
+	profitAndLossBy1Year := latestPrice.Mul(decimal.NewFromInt(100)).
+		Div(oldestPrice).
+		Sub(decimal.NewFromInt(100))
+
+	annualPercentageYield, _ = profitAndLossBy1Year.Div(totalSellPoolTrades1Year).Float64()
+	return
 }
 
 func getProfitAndLossChart(indicatorsAll []models.PoolIndicators) (poolInfoChartData []PoolInfoChartData) {

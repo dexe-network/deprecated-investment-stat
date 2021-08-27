@@ -903,6 +903,9 @@ var doc = `{
         "service_routes.PoolInfoResponse": {
             "type": "object",
             "properties": {
+                "annualPercentageYield": {
+                    "type": "number"
+                },
                 "basicTokenAdr": {
                     "type": "string"
                 },

@@ -12,6 +12,7 @@ var InitTables_201608301400 = &gormigrate.Migration{
 		// it's a good pratice to copy the struct inside the function,
 		// so side effects are prevented if the original struct changes during the time
 		tx.Exec("CREATE TYPE pooltransfertype AS ENUM('deposit', 'withdraw')")
+		tx.Exec("CREATE TYPE tradetype AS ENUM('buy', 'sell')")
 		return tx.AutoMigrate(
 			&models.Pool{},
 			&models.Trade{},

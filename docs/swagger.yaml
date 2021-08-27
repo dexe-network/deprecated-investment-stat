@@ -150,6 +150,8 @@ definitions:
     type: object
   service_routes.PoolInfoResponse:
     properties:
+      annualPercentageYield:
+        type: number
       basicTokenAdr:
         type: string
       basicTokenDecimal:

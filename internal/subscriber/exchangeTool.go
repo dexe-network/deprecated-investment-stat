@@ -23,6 +23,21 @@ func (s *Subscriber) exchangeToolTransactionProcessing(tx types.Transaction, blo
 	parsedPaths := &pgtype.TextArray{}
 	parsedPaths.Set(helpers.AddressArrToStringArr(parsedTransaction.Path))
 
+	// Get Trader Wallet Address
+	var foundPool models.Pool
+	if err := s.st.DB.First(&foundPool, "LOWER(\"poolAdr\") = LOWER(?)", parsedTransaction.TraderPool.String()).
+		Error; err != nil {
+		s.log.Debug("Find Pool error "+tx.Hash().String(), zap.Error(err))
+		return
+	}
+
+	var tradeType string
+	if parsedTransaction.Path[0].String() == foundPool.BasicTokenAdr {
+		tradeType = "buy"
+	} else if parsedTransaction.Path[len(parsedTransaction.Path)-1].String() == foundPool.BasicTokenAdr {
+		tradeType = "sell"
+	}
+
 	err = s.st.Repo.Trade.Save(
 		&models.Trade{
 			TraderPool:   parsedTransaction.TraderPool.String(),
@@ -31,20 +46,13 @@ func (s *Subscriber) exchangeToolTransactionProcessing(tx types.Transaction, blo
 			Path:         *parsedPaths,
 			Deadline:     parsedTransaction.Deadline.String(),
 			Date:         time.Unix(int64(blockTime), 0),
+			Type:         tradeType,
 			BlockNumber:  parsedTransaction.BlockNumber,
 			Tx:           parsedTransaction.Tx,
 		},
 	)
 	if err != nil {
 		s.log.Error("Can't save trade to DB", zap.Error(err))
-	}
-
-	// Get Trader Wallet Address
-	var foundPool models.Pool
-	if err := s.st.DB.First(&foundPool, "LOWER(\"poolAdr\") = LOWER(?)", parsedTransaction.TraderPool.String()).
-		Error; err != nil {
-		s.log.Debug("Find Pool error "+tx.Hash().String(), zap.Error(err))
-		return
 	}
 
 	///////// Store Pool Indicators for every operation
