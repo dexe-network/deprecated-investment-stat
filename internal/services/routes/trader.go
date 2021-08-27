@@ -122,7 +122,6 @@ func (p *TraderRoutes) GetPoolInfo(c *gin.Context) {
 	}
 	priceChange24H, personalFundsLocked24H, investorsFundsLocked24H := getPoolInfoIndicatorLast24Data(
 		indicatorsLast24h,
-		currentPrice,
 		investorsFundsLocked,
 		personalFundsLocked,
 		c,
@@ -182,7 +181,7 @@ func (p *TraderRoutes) GetPoolInfo(c *gin.Context) {
 
 	///// Trades Data
 	var poolTradesDataForApy []models.Trade
-	if err := p.Context.st.DB.Find(
+	if err := p.Context.st.DB.Order("date asc").Find(
 		&poolTradesDataForApy,
 		"LOWER(\"traderPool\") = LOWER(?) AND type = ? AND date >= ?",
 		poolAddress, "sell", time.Now().AddDate(-1, 0, 0),
@@ -312,9 +311,7 @@ func getProfitAndLossByPeriod(
 
 	// Latest
 	latestIndicator := indicatorsAll[len(indicatorsAll)-1]
-	latestTotalCap := helpers.ToDecimal(latestIndicator.TotalCap, int(foundPool.BasicTokenDecimals))
-	latestTotalSupply := helpers.ToDecimal(latestIndicator.TotalSupply, int(foundPool.Decimals))
-	latestPrice := latestTotalCap.Div(latestTotalSupply)
+	latestPrice, _ := decimal.NewFromString(latestIndicator.PoolTokenPrice)
 	profitAndLossByPeriod.All, _ = latestPrice.Mul(decimal.NewFromInt(100)).
 		Div(decimal.NewFromInt(1)).
 		Sub(decimal.NewFromInt(100)).Float64()
@@ -322,9 +319,7 @@ func getProfitAndLossByPeriod(
 	// m1
 	if len(m1) > 0 {
 		m1Indicator := m1[0]
-		m1totalCap := helpers.ToDecimal(m1Indicator.TotalCap, int(foundPool.BasicTokenDecimals))
-		m1totalSupply := helpers.ToDecimal(m1Indicator.TotalSupply, int(foundPool.Decimals))
-		m1Price := m1totalCap.Div(m1totalSupply)
+		m1Price, _ := decimal.NewFromString(m1Indicator.PoolTokenPrice)
 		profitAndLossByPeriod.M1, _ = latestPrice.Mul(decimal.NewFromInt(100)).
 			Div(m1Price).
 			Sub(decimal.NewFromInt(100)).Float64()
@@ -335,9 +330,7 @@ func getProfitAndLossByPeriod(
 	// m3
 	if len(m3) > 0 {
 		m3Indicator := m3[0]
-		m3totalCap := helpers.ToDecimal(m3Indicator.TotalCap, int(foundPool.BasicTokenDecimals))
-		m3totalSupply := helpers.ToDecimal(m3Indicator.TotalSupply, int(foundPool.Decimals))
-		m3Price := m3totalCap.Div(m3totalSupply)
+		m3Price, _ := decimal.NewFromString(m3Indicator.PoolTokenPrice)
 		profitAndLossByPeriod.M3, _ = latestPrice.Mul(decimal.NewFromInt(100)).
 			Div(m3Price).
 			Sub(decimal.NewFromInt(100)).Float64()
@@ -359,7 +352,6 @@ func getPoolInfoInvestorsLast24hCount(investorsCount int64, investorsLast24hCoun
 
 func getPoolInfoIndicatorLast24Data(
 	indicatorsLast24h []models.PoolIndicators,
-	currentPrice string,
 	investorsFundsLocked string,
 	personalFundsLocked string,
 	c *gin.Context,
@@ -369,11 +361,12 @@ func getPoolInfoIndicatorLast24Data(
 		personalFundsLocked24H = 0
 		investorsFundsLocked24H = 0
 	} else {
-		indicatorData := indicatorsLast24h[0]
-		totalCap24h, err := strconv.ParseFloat(indicatorData.TotalCap, 64)
-		totalSupply24h, err := strconv.ParseFloat(indicatorData.TotalSupply, 64)
+		oldestPrice, _ := decimal.NewFromString(indicatorsLast24h[0].PoolTokenPrice)
+		latestPrice, _ := decimal.NewFromString(indicatorsLast24h[len(indicatorsLast24h)-1].PoolTokenPrice)
+
 		latestInvestorsFundsLocked, err := strconv.ParseFloat(investorsFundsLocked, 64)
 		latestPersonalFundsLocked, err := strconv.ParseFloat(personalFundsLocked, 64)
+
 		if err != nil {
 			response.Error(
 				c, http.StatusBadRequest, response.E{
@@ -383,23 +376,13 @@ func getPoolInfoIndicatorLast24Data(
 			)
 			return
 		}
-		if totalCap24h <= 0 || totalSupply24h <= 0 || currentPrice == "0" {
+		if oldestPrice.LessThanOrEqual(decimal.NewFromInt(0)) || latestPrice.LessThanOrEqual(decimal.NewFromInt(0)) {
 			priceChange24H = 0
 		} else {
-			currentPrice, err := strconv.ParseFloat(currentPrice, 64)
-			if err != nil {
-				response.Error(
-					c, http.StatusBadRequest, response.E{
-						Code:    response.InvalidRequest,
-						Message: "ParseFloat request error",
-					},
-				)
-				return
-			}
-			last24HPrice := totalCap24h / totalSupply24h
-			priceChange24H = last24HPrice / currentPrice * 100
+			priceChange24H, _ = oldestPrice.Div(latestPrice).Mul(decimal.NewFromInt(100)).Float64()
 		}
 
+		indicatorData := indicatorsLast24h[0]
 		//// Calculate personalFundsLocked24H and investorsFundsLocked24H
 		// Parse String to Int
 		oldTotalCapInt := new(big.Int)
