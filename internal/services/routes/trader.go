@@ -320,9 +320,13 @@ func getProfitAndLossByPeriod(
 	if len(m1) > 0 {
 		m1Indicator := m1[0]
 		m1Price, _ := decimal.NewFromString(m1Indicator.PoolTokenPrice)
-		profitAndLossByPeriod.M1, _ = latestPrice.Mul(decimal.NewFromInt(100)).
-			Div(m1Price).
-			Sub(decimal.NewFromInt(100)).Float64()
+		if m1Price.LessThanOrEqual(decimal.NewFromInt(0)) {
+			profitAndLossByPeriod.M1 = 0
+		} else {
+			profitAndLossByPeriod.M1, _ = latestPrice.Mul(decimal.NewFromInt(100)).
+				Div(m1Price).
+				Sub(decimal.NewFromInt(100)).Float64()
+		}
 	} else {
 		profitAndLossByPeriod.M1 = 0
 	}
@@ -331,9 +335,13 @@ func getProfitAndLossByPeriod(
 	if len(m3) > 0 {
 		m3Indicator := m3[0]
 		m3Price, _ := decimal.NewFromString(m3Indicator.PoolTokenPrice)
-		profitAndLossByPeriod.M3, _ = latestPrice.Mul(decimal.NewFromInt(100)).
-			Div(m3Price).
-			Sub(decimal.NewFromInt(100)).Float64()
+		if m3Price.LessThanOrEqual(decimal.NewFromInt(0)) {
+			profitAndLossByPeriod.M3 = 0
+		} else {
+			profitAndLossByPeriod.M3, _ = latestPrice.Mul(decimal.NewFromInt(100)).
+				Div(m3Price).
+				Sub(decimal.NewFromInt(100)).Float64()
+		}
 	} else {
 		profitAndLossByPeriod.M3 = 0
 	}
@@ -399,13 +407,13 @@ func getPoolInfoIndicatorLast24Data(
 		)
 		oldestPersonalFundsLocked := float64(oldTraderBasicTokensDeposited.Int64())
 
-		if oldestInvestorsFundsLocked <= 0 {
+		if oldestInvestorsFundsLocked <= 0 || latestInvestorsFundsLocked <= 0 {
 			investorsFundsLocked24H = 0
 		} else {
 			investorsFundsLocked24H = oldestInvestorsFundsLocked / latestInvestorsFundsLocked * 100
 		}
 
-		if oldestPersonalFundsLocked <= 0 {
+		if oldestPersonalFundsLocked <= 0 || latestPersonalFundsLocked <= 0 {
 			personalFundsLocked24H = 0
 		} else {
 			personalFundsLocked24H = oldestPersonalFundsLocked / latestPersonalFundsLocked * 100
