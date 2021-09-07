@@ -43,6 +43,8 @@ func (s *Subscriber) exchangeToolTransactionProcessing(tx types.Transaction, blo
 			TraderPool:   parsedTransaction.TraderPool.String(),
 			AmountIn:     parsedTransaction.AmountIn.String(),
 			AmountOutMin: parsedTransaction.AmountOutMin.String(),
+			FromAmt:      parsedTransaction.FromAmt.String(),
+			ToAmt:        parsedTransaction.ToAmt.String(),
 			Path:         *parsedPaths,
 			Deadline:     parsedTransaction.Deadline.String(),
 			Date:         time.Unix(int64(blockTime), 0),
@@ -99,4 +101,11 @@ func (s *Subscriber) exchangeToolTransactionProcessing(tx types.Transaction, blo
 		s.log.Error("Can't save PoolIndicators to DB", zap.Error(err))
 	}
 	/////////
+	///// Calculate Trades info aka Wallet Info
+	err = s.parser.CalculateTrades(&parsedTransaction, tradeType, blockTime, s.st)
+	if err != nil {
+		s.log.Error("Can't Calculate Trades", zap.Error(err))
+	}
+
+	/////
 }

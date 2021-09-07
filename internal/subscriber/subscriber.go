@@ -171,7 +171,7 @@ func (s *Subscriber) handleHeader(header types.Header) {
 		case s.parser.ExchangeToolAddress():
 			fmt.Println("handleHeader", "ExchangeTool")
 			wg.Add(1)
-			go func(t types.Transaction, blockNumber int64) {
+			func(t types.Transaction, blockNumber int64) {
 				defer wg.Done()
 				s.exchangeToolTransactionProcessing(t, block.Number().Int64(), block.Time())
 			}(*t, block.Number().Int64())
@@ -250,7 +250,13 @@ func (s *Subscriber) loadBlockNumberFromFile() {
 	}
 }
 
-func (s *Subscriber) getPrices(Tx string, TokenIn common.Address, TokenOut common.Address, in *big.Int, out *big.Int) (priceIn decimal.Decimal, priceOut decimal.Decimal, err error) {
+func (s *Subscriber) getPrices(
+	Tx string,
+	TokenIn common.Address,
+	TokenOut common.Address,
+	in *big.Int,
+	out *big.Int,
+) (priceIn decimal.Decimal, priceOut decimal.Decimal, err error) {
 
 	inDec, err := s.getTokenDecimals(TokenIn)
 	if err != nil {
