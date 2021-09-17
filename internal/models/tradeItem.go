@@ -5,12 +5,13 @@ import (
 )
 
 type TradeItem struct {
-	Id           uint         `json:"id" gorm:"primaryKey;column:id"`
-	PoolAddress  string       `json:"poolAddress"      gorm:"type:character varying(255);column:poolAddress;not null"`
-	TokenAddress string       `json:"tokenAddress"      gorm:"type:character varying(255);column:tokenAddress;not null"`
-	Balance      string       `json:"balance"      gorm:"type:numeric;column:balance;not null"`
-	TradeStatus  string       `json:"tradeStatus"      gorm:"type:tradestatus;column:tradeStatus;not null"`
-	TradeEvents  []TradeEvent `json:"tradeEvents" gorm:"foreignKey:trade_item_id"`
+	Id                uint         `json:"id" gorm:"primaryKey;column:id"`
+	PoolAddress       string       `json:"poolAddress"      gorm:"type:character varying(255);column:poolAddress;not null"`
+	BaseTokenAddress  string       `json:"baseTokenAddress"      gorm:"type:character varying(255);column:baseTokenAddress;not null"`
+	TradeTokenAddress string       `json:"tradeTokenAddress"      gorm:"type:character varying(255);column:tradeTokenAddress;not null"`
+	Balance           string       `json:"balance"      gorm:"type:numeric;column:balance;not null"`
+	TradeStatus       string       `json:"tradeStatus"      gorm:"type:tradestatus;column:tradeStatus;not null"`
+	TradeEvents       []TradeEvent `json:"tradeEvents" gorm:"foreignKey:trade_item_id"`
 
 	OpenDate    time.Time `json:"openDate"         gorm:"type:timestamp with time zone;column:openDate;not null"`
 	CloseDate   time.Time `json:"closeDate"         gorm:"type:timestamp with time zone;column:closeDate;not null"`

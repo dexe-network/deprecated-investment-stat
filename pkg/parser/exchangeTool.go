@@ -2,28 +2,35 @@ package parser
 
 import (
 	"context"
+	"dex-trades-parser/internal/contracts/erc20"
+	"dex-trades-parser/internal/contracts/uniPair"
 	"dex-trades-parser/internal/models"
 	"dex-trades-parser/internal/storage"
+	"dex-trades-parser/pkg/helpers"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 	"math/big"
+	"strings"
 	"time"
 )
 
 type ParsedExchangeToolTx struct {
-	TraderPool common.Address
-	AmountIn *big.Int
+	TraderPool   common.Address
+	AmountIn     *big.Int
 	AmountOutMin *big.Int
-	FromAmt *big.Int
-	ToAmt *big.Int
-	Path []common.Address
-	Deadline *big.Int
-	BlockNumber int64
-	Tx string
+	FromAmt      *big.Int
+	ToAmt        *big.Int
+	Path         []common.Address
+	Deadline     *big.Int
+	BlockNumber  int64
+	Tx           string
 }
 
 type ExchangeLogData struct {
@@ -33,48 +40,102 @@ type ExchangeLogData struct {
 	ToAmt     *big.Int
 }
 
-func (p *Parser) CalculateTrades(data *ParsedExchangeToolTx, tradeType string, blockTime uint64, st *storage.Storage) (err error) {
-	var tokenAddress common.Address
+func (p *Parser) CalculateTrades(
+	data *ParsedExchangeToolTx,
+	tradeType string,
+	blockTime uint64,
+	st *storage.Storage,
+) (err error) {
+	fromTokenAddress := data.Path[0]
+	toTokenAddress := data.Path[len(data.Path)-1]
+
+	var baseTokenAddress common.Address
+	var tradeTokenAddress common.Address
+
 	if tradeType == "buy" {
-		tokenAddress = data.Path[len(data.Path)-1]
+		baseTokenAddress = fromTokenAddress
+		tradeTokenAddress = toTokenAddress
 	} else if tradeType == "sell" {
-		tokenAddress = data.Path[0]
+		baseTokenAddress = toTokenAddress
+		tradeTokenAddress = fromTokenAddress
 	}
+
+	// Trade Token Info
+	fromTokenErc20, err := erc20.NewErc20(fromTokenAddress, p.client)
+	if err != nil {
+		p.log.Debug("Create instance of token error", zap.Error(err))
+		return
+	}
+
+	fromTokenDecimals, err := fromTokenErc20.Decimals(&bind.CallOpts{})
+	if err != nil {
+		p.log.Debug("Decimals request error ", zap.Error(err))
+		return
+	}
+
+	toTokenErc20, err := erc20.NewErc20(toTokenAddress, p.client)
+	if err != nil {
+		p.log.Debug("Create instance of token error", zap.Error(err))
+		return
+	}
+
+	toTokenDecimals, err := toTokenErc20.Decimals(&bind.CallOpts{})
+	if err != nil {
+		p.log.Debug("Decimals request error ", zap.Error(err))
+		return
+	}
+	//
 
 	var tradeItems []models.TradeItem
 
 	if err := st.DB.Order("date desc").Find(
 		&tradeItems,
-		"LOWER(\"poolAddress\") = LOWER(?) AND LOWER(\"tokenAddress\") = LOWER(?) AND balance > 0",
+		"LOWER(\"poolAddress\") = LOWER(?) AND LOWER(\"tradeTokenAddress\") = LOWER(?) AND balance > 0",
 		data.TraderPool.String(),
-		tokenAddress.String(),
+		tradeTokenAddress.String(),
 	).Error;
 		err != nil {
 		p.log.Debug("Error CalculateTrades Find tradeItem", zap.Error(err))
 		return err
 	}
 
+	//sendValue, receiveValue := decimalNumberShifter(data.FromAmt, data.ToAmt, fromTokenDecimals, toTokenDecimals)
+	//price := decimal.NewFromBigInt(sendValue, 0).Div(decimal.NewFromBigInt(receiveValue, 0))
+
+	sendValue := helpers.ToDecimal(data.FromAmt, int(fromTokenDecimals))
+	receiveValue := helpers.ToDecimal(data.ToAmt, int(toTokenDecimals))
+
 	if len(tradeItems) <= 0 {
 
 		newTradeItem := models.TradeItem{
-			PoolAddress:  data.TraderPool.String(),
-			TokenAddress: tokenAddress.String(),
-			Balance:      data.ToAmt.String(),
-			TradeStatus:  "open",
-			TradeEvents:  nil,
-			OpenDate:     time.Unix(int64(blockTime), 0),
-			CloseDate:    time.Time{},
-			Date:         time.Unix(int64(blockTime), 0),
-			BlockNumber:  data.BlockNumber,
+			PoolAddress:       data.TraderPool.String(),
+			BaseTokenAddress:  baseTokenAddress.String(),
+			TradeTokenAddress: tradeTokenAddress.String(),
+			Balance:           data.ToAmt.String(),
+			TradeStatus:       "open",
+			TradeEvents:       nil,
+			OpenDate:          time.Unix(int64(blockTime), 0),
+			CloseDate:         time.Time{},
+			Date:              time.Unix(int64(blockTime), 0),
+			BlockNumber:       data.BlockNumber,
 		}
 
-		newTradeItem.TradeEvents = append(newTradeItem.TradeEvents, models.TradeEvent{
-			TradeType:   tradeType,
-			Amount:      data.ToAmt.String(),
-			Date:        time.Unix(int64(blockTime), 0),
-			BlockNumber: data.BlockNumber,
-			Tx:          data.Tx,
-		})
+		price := sendValue.Div(receiveValue)
+		//price := decimal.NewFromBigInt(sendValue, 0).Div(decimal.NewFromBigInt(receiveValue, 0))
+
+		newTradeItem.TradeEvents = append(
+			newTradeItem.TradeEvents, models.TradeEvent{
+				TradeType:            tradeType,
+				FromAmount:           data.FromAmt.String(),
+				ToAmount:             data.ToAmt.String(),
+				Price:                price.String(),
+				SpentTokenAddress:    toTokenAddress.String(),
+				ReceivedTokenAddress: fromTokenAddress.String(),
+				Date:                 time.Unix(int64(blockTime), 0),
+				BlockNumber:          data.BlockNumber,
+				Tx:                   data.Tx,
+			},
+		)
 
 		if err := st.DB.Create(&newTradeItem).Error; err != nil {
 			p.log.Debug("Error Create newTradeItem", zap.Error(err))
@@ -87,13 +148,16 @@ func (p *Parser) CalculateTrades(data *ParsedExchangeToolTx, tradeType string, b
 		balance.SetString(openTrade.Balance, 10)
 
 		var balanceAfterOperation *big.Int
-		var amount string
+		var price decimal.Decimal
+
 		if tradeType == "buy" {
 			balanceAfterOperation = balance.Add(balance, data.ToAmt)
-			amount = data.ToAmt.String()
+			price = sendValue.Div(receiveValue)
+			//price = decimal.NewFromBigInt(sendValue, 0).Div(decimal.NewFromBigInt(receiveValue, 0))
 		} else if tradeType == "sell" {
 			balanceAfterOperation = balance.Sub(balance, data.FromAmt)
-			amount = data.FromAmt.String()
+			price = receiveValue.Div(sendValue)
+			//price = decimal.NewFromBigInt(receiveValue, 0).Div(decimal.NewFromBigInt(sendValue, 0))
 		}
 
 		if balanceAfterOperation.Cmp(big.NewInt(0)) <= 0 {
@@ -102,17 +166,50 @@ func (p *Parser) CalculateTrades(data *ParsedExchangeToolTx, tradeType string, b
 
 		openTrade.Balance = balanceAfterOperation.String()
 
-		openTrade.TradeEvents = append(openTrade.TradeEvents, models.TradeEvent{
-			TradeType:   tradeType,
-			Amount:      amount,
-			Date:        time.Unix(int64(blockTime), 0),
-			BlockNumber: data.BlockNumber,
-			Tx:          data.Tx,
-		})
+		openTrade.TradeEvents = append(
+			openTrade.TradeEvents, models.TradeEvent{
+				TradeType:            tradeType,
+				FromAmount:           data.FromAmt.String(),
+				ToAmount:             data.ToAmt.String(),
+				Price:                price.String(),
+				SpentTokenAddress:    toTokenAddress.String(),
+				ReceivedTokenAddress: fromTokenAddress.String(),
+				Date:                 time.Unix(int64(blockTime), 0),
+				BlockNumber:          data.BlockNumber,
+				Tx:                   data.Tx,
+			},
+		)
 		st.DB.Save(&openTrade)
 	}
 
 	return err
+}
+
+func decimalNumberShifter(number0 *big.Int, number1 *big.Int, decimal0 uint8, decimal1 uint8) (
+	resultNum0 *big.Int,
+	resultNum1 *big.Int,
+) {
+	if decimal0 < decimal1 {
+		shiftDecimal := big.NewInt(int64(decimal1 - decimal0))
+		multi := big.NewInt(10)
+		modifiedNumber0 := big.NewInt(0).Mul(number0, big.NewInt(0).Exp(multi, shiftDecimal, nil))
+
+		resultNum0 = modifiedNumber0
+		resultNum1 = number1
+		return
+	} else if decimal0 > decimal1 {
+		shiftDecimal := big.NewInt(int64(decimal0 - decimal1))
+		multi := big.NewInt(10)
+		modifiedNumber1 := big.NewInt(0).Mul(number1, big.NewInt(0).Exp(multi, shiftDecimal, nil))
+
+		resultNum0 = number0
+		resultNum1 = modifiedNumber1
+		return
+	} else {
+		resultNum0 = number0
+		resultNum1 = number1
+		return
+	}
 }
 
 func (p *Parser) ParseExchangeToolTransaction(t types.Transaction) (pTx ParsedExchangeToolTx, err error) {
@@ -177,6 +274,19 @@ func (p *Parser) ParseExchangeToolTransaction(t types.Transaction) (pTx ParsedEx
 			logExchangedData.ToAsset = logExchangedRawData[1].(common.Address)
 			logExchangedData.FromAmt = logExchangedRawData[2].(*big.Int)
 			logExchangedData.ToAmt = logExchangedRawData[3].(*big.Int)
+			fmt.Println("Tx", vLog.TxHash.String())
+			println("FromAmt", logExchangedRawData[2].(*big.Int).String(), "ToAmt", logExchangedRawData[3].(*big.Int).String())
+
+		case "0xd78ad95fa46c994b6551d0da85fc275fe613ce37657fb8d5e3d130840159d822":
+			fmt.Println("Tx", vLog.TxHash.String())
+			parsed, err := abi.JSON(strings.NewReader(uniPair.UniPairABI))
+			logExchangedRawData, err := parsed.Unpack("Swap", vLog.Data)
+			if err != nil {
+				break
+			}
+			println(logExchangedRawData[0].(*big.Int).String(),
+				logExchangedRawData[1].(*big.Int).String(),
+				logExchangedRawData[2].(*big.Int).String(), logExchangedRawData[3].(*big.Int).String())
 		}
 	}
 
